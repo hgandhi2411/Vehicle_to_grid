@@ -15,7 +15,7 @@ from matplotlib.patches import Ellipse
 Sample = 2559    #total EVs in NYC 2015
 Actual_battery = 75	#kWh 60Kwh discontinued
 battery = 60 #kWh
-eff = 0.62 #roundtrip efficiency of Tesla S 
+eff = 0.95 #roundtrip efficiency of Tesla S 
 #reference: Shirazi, Sachs 2017
 rated_dist = 240 #miles www.tesla.com
 dist_one_kWh = rated_dist*eff/battery  	#miles/kWh
@@ -38,7 +38,7 @@ working_days = 250
 #V2G_cycles = 25
 
 #For optimal scenario we need a set selling price
-SP = [0, 0.1, 0.2, 0.3] #np.arange(0,0.3, 0.01)		#$/kWh
+SP = np.arange(0, 0.31, 0.01)		#$/kWh
 x = len(SP)
 
 
@@ -54,17 +54,18 @@ def addtime(array = None, minutes = [0]):
 	return np.asarray(new_array)
 
 
-#www.stakoverflow.com/questions/3463930/how-to-round-the-minute-of-a-datetime-object-python
+#www.stackoverflow.com/questions/3463930/how-to-round-the-minute-of-a-datetime-object-python
 def roundupTime(dtarray=None, roundTo=5*60):
 	'''Round a datetime object to any time laps in seconds
 	Args: dtarray : datetime.datetime object.
 		roundTo : Closest number of seconds to round to, default 5 minutes.
 	return: dtarray : Rounded time to next 5 minutes for each element of the array
 	'''
+	dtarray = np.array(dtarray)
 	for i in range(len(dtarray)):
 		seconds = (dtarray[i] - dtarray[i].min).seconds
 		rounding = (seconds+roundTo) // roundTo * roundTo
-		dtarray[i] = dtarray[i] + dt.timedelta(0,rounding-seconds, -dtarray[i].microsecond)
+		dtarray[i] = dtarray[i] + dt.timedelta(0, rounding-seconds, -dtarray[i].microsecond)
 	return dtarray
 
 def rounddownTime(dtarray=None, roundTo=5*60):
@@ -73,10 +74,11 @@ def rounddownTime(dtarray=None, roundTo=5*60):
 		roundTo : Closest number of seconds to round to, default 5 minutes.
 	return: dtarray : Rounded time to 5 minutes before for each element of the array
 	'''
+	dtarray = np.array(dtarray)
 	for i in range(len(dtarray)):
 		seconds = (dtarray[i] - dtarray[i].min).seconds
 		rounding = (seconds) // roundTo * roundTo
-		dtarray[i] = dtarray[i] + dt.timedelta(0,rounding-seconds, -dtarray[i].microsecond)
+		dtarray[i] = dtarray[i] + dt.timedelta(0, rounding-seconds, -dtarray[i].microsecond)
 	return dtarray
 
 def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins = None, set_SP = 0):
@@ -99,8 +101,8 @@ def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins
 					i_s = i
 				if(time_stop[j] == dates[i]):
 					j_s = i
-			total_cost.append(np.sum(np.asarray(price[i_s:(j_s-1)]))*charging_rate*5*eff)			# in dollars
-		return np.asarray(total_cost)
+			total_cost.append(np.sum(np.array(price[i_s:(j_s-1)]))*charging_rate*5/60*eff)			# in dollars
+		return np.array(total_cost)
 	
 	elif(state == 'discharging'):
 		total_cost = np.zeros(a)
@@ -120,7 +122,6 @@ def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins
 
 	else:
 		return None
-
 
 
 def create_dict(file_data, bins = 'auto'):
@@ -316,22 +317,22 @@ for i in range(x):
 	files2.append('Time{}.svg'.format(SP[i]))
 
 #Histogramming data
-low = int(round(np.amin(Annual_savings)/500)*500)
-high = int(round(np.amax(Annual_savings)/500)*500)
-bins = np.linspace(low,high, 100)
+low = math.floor(np.amin(Annual_savings))
+high = math.ceil(np.amax(Annual_savings))
+bins = np.linspace(low, high, 20)
 
 for i in range(x):
 	plt.hist(Annual_savings[i], bins = bins, color = '#191970', alpha = 0.5, label = 'SP = {} \nMean cycles = {:.2f}'.format(SP[i], np.mean(battery_cycles[i])))
 	#plt.text(-100,150,'Mean cycles = {}'.format(np.mean(battery_cycles[i])))
 	#plt.title(r'$ Optimal\ scenario\ - Comparison\ of\ different\ selling\ prices\ $')
 	plt.xlabel(r'$Savings\ from\ V2G\ over\ normal\ commute (\$) $')
-	plt.xticks(np.round(np.arange(low, high, step= int((high - low)/10))/500.0)*500, rotation=30)
 	plt.axvline(y[i][0], lw = 1, color = 'orange')
 	plt.axvline(y[i][1], lw = 1, color = 'orange')
 	plt.ylabel(r'$Number\ of\ EV\ Users\ $')
 	plt.legend(loc = 'best', fontsize = 11)
 	plt.savefig(files1[i])
 	plt.clf() #clear existing figure
+	#print(Annual_savings[i])
 
 plt.close() #close existing figure
 
@@ -346,22 +347,8 @@ for i in range(Sample):
 
 for i in range(x):
 
-	'''	
-	# 95% confidence region
-	cov = np.cov(commute_dist, Annual_savings[i])
-	eigvals, eigvecs = np.linalg.eig(cov)
-	max_index = np.argmax(eigvals)
-	min_index = np.argmin(eigvals)
-	xy = [np.mean(commute_dist), np.mean(Annual_savings[i])]
-	v1 = eigvecs[max_index]
-	print(xy, v1)
-	angle = np.arctan2(v1[1], v1[0]) + math.pi
-	width = 2 * z * math.sqrt(eigvals[max_index])
-	height = 2 * z * math.sqrt(eigvals[min_index])
-	ellipse = Ellipse(xy = xy, width = width, height = height, angle = angle, alpha = 0.2, facecolor = '#ff6347')
-	'''
 	# distance jointplot
-	g = (sns.jointplot(commute_dist, Annual_savings[i], kind = 'hex')).set_axis_labels("Commute distance", "Annual Savings")
+	g = (sns.jointplot(commute_dist, Annual_savings[i], kind = 'hex', gridsize = 15, marginal_kws={'bins': 15})).set_axis_labels("Commute distance", "Annual Savings")
 	# g.ax_joint.add_patch(ellipse)
 	# yticks = np.round(np.arange(np.min(Annual_savings[i]), np.max(Annual_savings[i]), step= int((np.max(Annual_savings[i]) - np.min(Annual_savings[i]))/10))/500.0)*500
 	# g.ax_joint.set_yticks(yticks)
@@ -376,28 +363,28 @@ for i in range(x):
 
 	# a weighted joint plot showing relation between time, time of departure and savings 
 	fig = plt.figure(figsize=(8, 7))
-	grid = plt.GridSpec(2, 3, width_ratios = [3,1, 0.1], height_ratios=[1,3], hspace=0.05, wspace= 0.05) # hspace = 0.1, wspace = 0.2
+	grid = plt.GridSpec(2, 3, width_ratios = [3,1, 0.1], height_ratios=[1,3], hspace=0.05, wspace= 0.07) # hspace = 0.1, wspace = 0.2
 	main_ax = fig.add_subplot(grid[1,0])
 	y_hist = fig.add_subplot(grid[1,1], yticklabels=[]) #sharey=main_ax)# , xticklabels=[], yticklabels=[])#
 	x_hist = fig.add_subplot(grid[0,0], xticklabels=[]) #sharex=main_ax)# , yticklabels=[], xticklabels=[])# 
 	cax = fig.add_subplot(grid[1,2])
 
 	# scatter points on the main axes
-	a = main_ax.hexbin(commute_time, time_depart, C = Annual_savings[i] , cmap = cmap, gridsize = 20, vmin = low, vmax = high)
+	a = main_ax.hexbin(commute_time, time_depart, C = Annual_savings[i] , cmap = cmap, gridsize = 15, vmin = low, vmax = high)
 	main_ax.set_xlabel('')
 
 	# histogram on the attached axes
-	x_hist.hist(commute_time, 20, histtype='stepfilled',
+	x_hist.hist(commute_time, 15, histtype='stepfilled',
 				orientation='vertical', color = '#ffa07a')
 	#x_hist.invert_yaxis()
 
-	y_hist.hist(time_depart, 20, histtype='stepfilled',
+	y_hist.hist(time_depart, 15, histtype='stepfilled',
 				orientation='horizontal', color = '#ffa07a')
 	#y_hist.invert_xaxis()
 
 	#fig.subplots_adjust(right = 0.9)
 	cbar1 = plt.colorbar(a, cax = cax)
-	cbar1.ax.set_ylabel('Revenue from V2G')
+	cbar1.ax.set_ylabel('Annual savings from V2G')
 	plt.suptitle('SP = {}'.format(SP[i]))
 	plt.savefig(files2[i])
 	plt.close()

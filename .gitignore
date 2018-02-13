@@ -3,6 +3,8 @@
 Results
 reading
 ex files
+LBMP
+Population_data
 
 __pycache__
 
@@ -18,9 +20,7 @@ __pycache__
 
 #Unwanted csv files
 1230877_41.09_-74.02_2014 - solar.csv
-boston.csv 
 Cars.csv
-DC-LBMP.csv
 EV Sales 2016.csv
 PERV2PUB.CSV
 ss15pny.csv
