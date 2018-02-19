@@ -38,7 +38,7 @@ working_days = 250
 #V2G_cycles = 25
 
 #For optimal scenario we need a set selling price
-SP = [0] #np.arange(0, 0.31, 0.01)		#$/kWh
+SP = np.arange(0, 0.31, 0.01)		#$/kWh
 x = len(SP)
 
 def state_pop(state):
@@ -97,6 +97,7 @@ def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins
 		return: total_cost = An array of costs calculated, battery_sold = battery sold for V2G(only for state = 'discharging')
 	'''
 	a = len(time_start)
+    deg_cost = charging_rate * eff * lcos * bat_degradation
 	if(state == 'charging'):
 		total_cost = np.zeros(a)
 		if battery_left is None:
@@ -110,7 +111,7 @@ def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins
 			for i in range(len(dates)):
 				#print(time)
 				if(dates[i] == time):
-					if((battery_charged[j] <= battery*DoD) and (time < stop)):
+					if((price[i]) and (battery_charged[j] <= battery*DoD) and (time < stop)):
 						battery_charged[j] += charging_rate	#hourly
 						cost += charging_rate*eff*price[i]	#hourly
 						time += dt.timedelta(hours = 1)

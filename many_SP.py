@@ -306,7 +306,7 @@ for i in range(x):
     output.write('{} \t\t{} \t\t{} \t\t{}\n'.format(SP[i], mean[i], y[i], np.mean(battery_cycles[i])))
 output.write('cdgdn = {} \ncch = {} \nrt = {} \ncdgdn_commute = {} \ncch_commute = {} \n'.format(cdgdn, cch, rt, cdgdn_commute, cch_commute))
 output.write('\n')
-output.write('\ndistance = {}, mean = {:.2f} \ntime = {}, mean = {:.2f} \nwork hours = {}, mean = {:.2f} \n'.format(commute_dist, np.mean(commute_dist), commute_time, np.mean(commute_time), daily_work_mins/60.0, np.mean(daily_work_mins/60.0)))
+#output.write('\ndistance = {}, mean = {:.2f} \ntime = {}, mean = {:.2f} \nwork hours = {}, mean = {:.2f} \n'.format(commute_dist, np.mean(commute_dist), commute_time, np.mean(commute_time), daily_work_mins/60.0, np.mean(daily_work_mins/60.0)))
 output.close()
 
 #creating filenames for storing results
@@ -374,17 +374,18 @@ for i in range(x):
 	main_ax.set_xlabel('')
 
 	# histogram on the attached axes
-	x_hist.hist(commute_time, 15, histtype='stepfilled',
+	x_hist.hist(commute_time, 15, histtype='bar',
 				orientation='vertical', color = '#ffa07a')
 	#x_hist.invert_yaxis()
 
-	y_hist.hist(time_depart, 15, histtype='stepfilled',
+	y_hist.hist(time_depart, 15, histtype='bar',
 				orientation='horizontal', color = '#ffa07a')
 	#y_hist.invert_xaxis()
 
 	#fig.subplots_adjust(right = 0.9)
 	cbar1 = plt.colorbar(a, cax = cax)
 	cbar1.ax.set_ylabel('Annual savings from V2G')
+	plt.xticks(rotation = 30)
 	plt.suptitle('SP = {}'.format(SP[i]))
 	plt.savefig(files2[i])
 	plt.close()
