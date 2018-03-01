@@ -30,7 +30,8 @@ lifecycles = 5300		#for lithium ion battery from Gerad's article
 energy_throughput = 2*lifecycles*battery*DoD 		#Ln.Es.DoD (kWh)
 battery_cap_cost = 450			# $/kWh Nykvist and nilsson 2015, for 2014
 # Alternately from https://electrek.co/2017/02/18/tesla-battery-cost-gigafactory-model-3/
-bat_degradation = battery/energy_throughput			# using Gerad's equation, cb is the cost of current storage which will be introduced later.
+bat_degradation = battery/energy_throughput		# TODO: Check this to see why bat_cap_cost is not considered!	
+# using Gerad's equation, cb is the cost of current storage which will be introduced later.
 lcos = 1142/1000			# $/kWh, Lazards LCOS V2.0 2016, Commercial lithium ion category average
 
 working_days = 250
@@ -38,7 +39,7 @@ working_days = 250
 #V2G_cycles = 25
 
 #For optimal scenario we need a set selling price
-SP = [0] #np.arange(0, 0.31, 0.01)		#$/kWh
+SP = [0, 0.01, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]		#$/kWh
 x = len(SP)
 
 def state_pop(state):
@@ -110,15 +111,13 @@ def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins
 			for i in range(len(dates)):
 				#print(time)
 				if(dates[i] == time):
-					if((battery_charged[j] <= battery*DoD) and (time < stop)):
+					if((battery_charged[j] <= battery*DoD) and (time <= stop)):
 						battery_charged[j] += charging_rate	#hourly
 						cost += charging_rate*eff*price[i]	#hourly
 						time += dt.timedelta(hours = 1)
-					if(time > stop):
-						break
-				if(battery_charged[j] < battery*DoD):
-					cost += charging_rate * eff * ((battery*DoD - battery_charged[j]) * complete_charging_time/battery)/60 * price[i]	#only charge what is left
-					time += dt.timedelta(minutes = (battery*DoD - battery_charged[j]) * complete_charging_time/battery)
+				# if(battery_charged[j] < battery*DoD):
+    			# 		cost += charging_rate * eff * ((battery*DoD - battery_charged[j]) * complete_charging_time/battery)/60 * price[i]	#only charge what is left
+				# 	time += dt.timedelta(minutes = (battery*DoD - battery_charged[j]) * complete_charging_time/battery)
 			total_cost[j] = cost
 		return total_cost, battery_charged
 	
@@ -372,7 +371,7 @@ for s in state_list:
 	for i in range(x):
 
 		# distance jointplot
-		g = (sns.jointplot(commute_dist, Annual_savings[i], kind = 'hex', gridsize = 15, marginal_kws={'bins': 15})).set_axis_labels("Commute distance", "Annual Savings")
+		g = (sns.jointplot(commute_dist, Annual_savings[i], kind = 'hex', gridsize = 20, marginal_kws={'bins': 20})).set_axis_labels("Commute distance", "Annual Savings")
 		# g.ax_joint.add_patch(ellipse)
 		# yticks = np.round(np.arange(np.min(Annual_savings[i]), np.max(Annual_savings[i]), step= int((np.max(Annual_savings[i]) - np.min(Annual_savings[i]))/10))/500.0)*500
 		# g.ax_joint.set_yticks(yticks)
@@ -394,17 +393,17 @@ for s in state_list:
 		cax = fig.add_subplot(grid[1,2])
 
 		# scatter points on the main axes
-		a = main_ax.hexbin(commute_time, time_depart, C = Annual_savings[i] , cmap = cmap, gridsize = 15, vmin = low, vmax = high)
+		a = main_ax.hexbin(commute_time, time_depart, C = Annual_savings[i] , cmap = cmap, gridsize = 15, vmin = low, vmax = high, edgecolors = None)
 		main_ax.set_xlabel('')
 
 		# histogram on the attached axes
-		x_hist.hist(commute_time, 15, histtype='stepfilled',
+		x_hist.hist(commute_time, 15, histtype='bar',
 					orientation='vertical', color = '#ffa07a')
 		#x_hist.invert_yaxis()
 
-		y_hist.hist(time_depart, 15, histtype='stepfilled',
+		y_hist.hist(time_depart, 15, histtype='bar',
 					orientation='horizontal', color = '#ffa07a')
-		#y_hist.invert_xaxis()
+		y_hist.invert_xaxis()
 
 		#fig.subplots_adjust(right = 0.9)
 		cbar1 = plt.colorbar(a, cax = cax)
