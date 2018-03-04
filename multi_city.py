@@ -8,14 +8,14 @@ import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
 from pandas.tseries.holiday import USFederalHolidayCalendar
 import scipy.stats as ss
-from matplotlib.patches import Ellipse
+#from matplotlib.patches import Ellipse
 
 prefix = 'C:/Users/hetag/Desktop/Vehicle_to_grid/'
 # Required numbers
 Sample = 2559    #total EVs in NYC 2015
 Actual_battery = 75	#kWh 60Kwh discontinued
 battery = 60 #kWh
-eff = 0.95 #roundtrip efficiency of Tesla S 
+eff = 0.62 #roundtrip efficiency of Tesla S 
 #reference: Shirazi, Sachs 2017
 rated_dist = 240 #miles www.tesla.com
 dist_one_kWh = rated_dist*eff/battery  	#miles/kWh
@@ -28,23 +28,20 @@ complete_charging_time = 420 	#minutes(7 hrs) for the Level2 charger to charge T
 #battery degradation cost
 lifecycles = 5300		#for lithium ion battery from Gerad's article
 energy_throughput = 2*lifecycles*battery*DoD 		#Ln.Es.DoD (kWh)
-battery_cap_cost = 450			# $/kWh Nykvist and nilsson 2015, for 2014
+battery_cap_cost = 275			# $/kWh Bloomberg 2017, for 2017
 # Alternately from https://electrek.co/2017/02/18/tesla-battery-cost-gigafactory-model-3/
-bat_degradation = battery/energy_throughput		# TODO: Check this to see why bat_cap_cost is not considered!	
-# using Gerad's equation, cb is the cost of current storage which will be introduced later.
+bat_degradation = battery * battery_cap_cost/energy_throughput		# TODO: Check this to see why bat_cap_cost is not considered!	
 lcos = 1142/1000			# $/kWh, Lazards LCOS V2.0 2016, Commercial lithium ion category average
 
 working_days = 250
-#pricetaker_cycles = working_days
-#V2G_cycles = 25
 
 #For optimal scenario we need a set selling price
-SP = [0, 0.01, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]		#$/kWh
+SP = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20]		#$/kWh
 x = len(SP)
 
 def state_pop(state):
 	pop_files = {'Arizona': 'ss16paz.csv', 'California': 'ss16pca.csv', 'DC': 'ss16pdc.csv', 'Illinois': 'ss16pil.csv', 'Massachusetts': 'ss16pma.csv', 'New York': 'ss16pny.csv', 'Texas': 'ss16ptx.csv'}
-	LBMP_file = {'Arizona': 'phoenix.csv', 'California': 'sfca.csv', 'DC': 'washingtondc.csv', 'Illinois': 'chicago.csv', 'Massachusetts': 'boston.csv', 'New York': '2014LBMP.csv', 'Texas': 'houston.csv'}
+	LBMP_file = {'Arizona': 'phoenix.csv', 'California': 'sfca.csv', 'DC': 'washingtondc.csv', 'Illinois': 'chicago.csv', 'Massachusetts': 'boston.csv', 'New York': 'nyc.csv', 'Texas': 'houston.csv'}
 	return '/Population_data/' + pop_files[state], '/LBMP/' + LBMP_file[state]
 
 def addtime(array = None, minutes = [0]):
@@ -112,12 +109,14 @@ def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins
 				#print(time)
 				if(dates[i] == time):
 					if((battery_charged[j] <= battery*DoD) and (time <= stop)):
+						if((stop - time).seconds / 60 < 60):
+							# 5 minute window for the owner to come and start his vehicle
+							cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60 - 5) / 60 
+							battery_charged[j] += charging_rate * ((stop - time).seconds / 60 - 5) / 60
+							break
 						battery_charged[j] += charging_rate	#hourly
 						cost += charging_rate*eff*price[i]	#hourly
 						time += dt.timedelta(hours = 1)
-				# if(battery_charged[j] < battery*DoD):
-    			# 		cost += charging_rate * eff * ((battery*DoD - battery_charged[j]) * complete_charging_time/battery)/60 * price[i]	#only charge what is left
-				# 	time += dt.timedelta(minutes = (battery*DoD - battery_charged[j]) * complete_charging_time/battery)
 			total_cost[j] = cost
 		return total_cost, battery_charged
 	
@@ -126,14 +125,22 @@ def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins
 		battery_sold = np.zeros(a)
 		for j in range(a):
 			time = time_start[j]
-			stop = rounddownTime([time + dt.timedelta(minutes = daily_work_mins[j])])
+			stop = rounddownTime([time + dt.timedelta(minutes = daily_work_mins[j])], roundTo = 60 * 5)[0]
 			money_earned = 0
 			for i in range(len(dates)):
 				if(dates[i] == time):
 					if((price[i] >= set_SP) and (battery_sold[j] <= battery_left_to_sell[j]) and (time <= stop)):
+						if((stop - time).seconds / 60 < 60):
+    						# 5 minute window for the owner to come and start his vehicle
+							money_earned += charging_rate * eff * price[i] * ((stop - time).seconds / 60 - 5) / 60 
+							battery_sold[j] += charging_rate * ((stop - time).seconds / 60 - 5) / 60
+							break
 						battery_sold[j] += charging_rate
 						money_earned += charging_rate*eff*price[i]
 						time += dt.timedelta(hours = 1)
+						battery_left[j] -= charging_rate
+						if(battery_left[j] < battery*(1 - DoD)):
+							break
 			total_cost[j] = money_earned
 		return total_cost, battery_sold
 
@@ -160,8 +167,11 @@ dist = np.genfromtxt(prefix + 'PERV2PUB.CSV', delimiter = ',', dtype = None, use
 time = np.genfromtxt(prefix + 'PERV2PUB.CSV', delimiter = ',', dtype = None, skip_header=1, usecols = (84), filling_values = 0)    #commute time
 #work_time = np.genfromtxt('PERV2PUB.csv', delimiter = ',', dtype = None, usecols = (98), skip_header = 1, filling_values = 0)
 state = np.genfromtxt(prefix + 'PERV2PUB.CSV', delimiter = ',', dtype = None, usecols = (48), skip_header= 1, filling_values = 0)		#state in column 49 of PERV2PUB.csv
-state_list = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts']
+state_list = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'New York']
 mask = {'Arizona': 'AZ', 'California': 'CA', 'DC': 'DC', 'Illinois': 'IL', 'Massachusetts': 'MA', 'New York': 'NY', 'Texas': 'TX'}
+
+max_savings = {}
+pricetaker_savings = {}
 
 for s in state_list:
 	
@@ -240,6 +250,7 @@ for s in state_list:
 
 	#Using holiday calender
 	holidays = USFederalHolidayCalendar().holidays(start = '2017-01-01', end = '2018-01-01').to_pydatetime()
+	battery_charged = np.array([battery] * Sample)
 
 	while(count <= working_days):
 		#check if it is a holiday
@@ -262,7 +273,7 @@ for s in state_list:
 
 			for i in range(x):
 				
-				cost_discharging, battery_sold = cost_calc('discharging', date_set, price_set, time_discharge_starts, time_stop = None, daily_work_mins = daily_work_mins, set_SP = SP[i])
+				cost_discharging, battery_sold = cost_calc('discharging', date_set, price_set, time_discharge_starts, time_stop = None, daily_work_mins = daily_work_mins, set_SP = SP[i], battery_left = battery_charged)
 				final_discharge_cost[i] += cost_discharging
 				battery_used[i] = battery_sold + battery_used_for_travel
 				time_leaving_work = addtime(time_arrival_work, daily_work_mins)
@@ -272,16 +283,17 @@ for s in state_list:
 				#print('time_charging_starts', time_charging_starts)
 				time_charging_stops = addtime(time_charging_starts, complete_charging_time*battery_used[i]/battery)
 				time_charging_stops = roundupTime(time_charging_stops)
-				cost_charging, battery_charged = cost_calc('charging', date_set, price_set, time_charging_starts, time_stop = time_charging_stops, battery_left = battery - battery_used[i]) + battery_used[i] * bat_degradation * lcos * eff
-				#print(cost_charging)
-				final_cdgdn[i] += battery_used[i] * bat_degradation * lcos * eff
+				cost_charging, battery_charged = cost_calc('charging', date_set, price_set, time_charging_starts, time_stop = time_charging_stops, battery_left = battery - battery_used[i]) 
+				cost_charging += battery_used[i] * bat_degradation * eff
+				final_cdgdn[i] += battery_used[i] * bat_degradation * eff
 				final_charge_cost[i] += cost_charging
 
 			#Cost of commute without V2G
 			charge_commute_stop = addtime(time_charging_starts, complete_charging_time*battery_used_for_travel/battery)
 			charge_commute_stop = rounddownTime(np.asarray(charge_commute_stop))
-			cost_commute, battery_charged_commute = cost_calc('charging', date_set, price_set, time_charging_starts, time_stop = charge_commute_stop, battery_left = battery - battery_used_for_travel) + battery_used_for_travel * bat_degradation * lcos * eff
-			final_commute_cdgdn += battery_used_for_travel * bat_degradation * lcos * eff
+			cost_commute, battery_charged_commute = cost_calc('charging', date_set, price_set, time_charging_starts, time_stop = charge_commute_stop, battery_left = battery - battery_used_for_travel) 
+			cost_commute += battery_used_for_travel * bat_degradation * eff
+			final_commute_cdgdn += battery_used_for_travel * bat_degradation * eff
 			final_commute_cost += cost_commute
 			#print(final_commute_cost)
 
@@ -303,7 +315,7 @@ for s in state_list:
 	colors = ['#ffff00','#40E0D0','#ff0000', '#191970']
 	alpha = [1, 0.7, 0.5, 0.3]
 
-	sns.set(context = 'talk', style = 'dark')
+	sns.set(context = 'talk', style = 'darkgrid', font= 'Times New Roman', palette= 'hls')
 	mlib.rcParams['figure.figsize'] = (10, 8)
 	cdgdn_commute = np.mean(final_commute_cdgdn)
 	cch_commute = np.mean(final_commute_cost - final_commute_cdgdn)
@@ -320,6 +332,11 @@ for s in state_list:
 		cdgdn.append(np.mean(final_cdgdn[i]))
 		cch.append(np.mean(final_charge_cost[i] - final_cdgdn[i]))
 		rt.append(np.mean(final_discharge_cost[i])) #revenue from V2G
+
+	argmax = np.argmax(mean)
+	key = '{} {}'.format(s,SP[argmax])
+	max_savings[key] = Annual_savings[argmax]
+	pricetaker_savings[s] = Annual_savings[0]
 
 	np.set_printoptions(precision = 2, threshold = np.inf)
 	#Writing values to a file
@@ -345,7 +362,7 @@ for s in state_list:
 	bins = np.linspace(low, high, 20)
 
 	for i in range(x):
-		plt.hist(Annual_savings[i], bins = bins, color = '#191970', alpha = 0.5, label = 'SP = {} \nMean cycles = {:.2f}'.format(SP[i], np.mean(battery_cycles[i])))
+		plt.hist(Annual_savings[i], bins = bins, alpha = 0.8, label = 'SP = {} \nMean cycles = {:.2f}'.format(SP[i], np.mean(battery_cycles[i])), fc = None, ec = None)
 		#plt.text(-100,150,'Mean cycles = {}'.format(np.mean(battery_cycles[i])))
 		#plt.title(r'$ Optimal\ scenario\ - Comparison\ of\ different\ selling\ prices\ $')
 		plt.xlabel(r'$Savings\ from\ V2G\ over\ normal\ commute (\$) $')
@@ -413,3 +430,14 @@ for s in state_list:
 		plt.close()
 
 # end of state for loop
+max_savings = pd.DataFrame.from_dict(max_savings)
+sns.violinplot(data = max_savings)
+plt.ylabel('Annual Savings from V2G($)')
+plt.savefig('Results/violin.svg')
+plt.close()
+
+sns.violinplot(data = pd.DataFrame.from_dict(pricetaker_savings))
+plt.savefig('Results/pricetaker.svg')
+plt.ylabel('Annual Savings from V2G')
+plt.title('Price taker scenario')
+plt.close()
