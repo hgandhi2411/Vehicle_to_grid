@@ -11,7 +11,7 @@ import scipy.stats as ss
 import os
 #from matplotlib.patches import Ellipse
 
-prefix = 'C:/Users/hetag/Desktop/Vehicle_to_grid/'
+prefix = '/gpfs/fs2/scratch/hgandhi/PC/'
 # Required numbers
 Sample = 2559    #total EVs in NYC 2015
 Actual_battery = 75	#kWh 60Kwh discontinued
@@ -39,9 +39,8 @@ working_days = 250
 #For optimal scenario we need a set selling price
 SP = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20]		#$/kWh
 x = len(SP)
-emissions_factor = {'oil': 778, 'combined_cycle': 490, 'wind': 12}  #g CO2/kWh
-CO2_tax = {key: value*50*10**(-6) for (key, value) in emissions_factor}
-print(CO2_tax)
+print(x)
+CO2_tax = {'oil': 778, 'combined_cycle': 490, 'wind': 12}  #g CO2/kWh
 
 def state_pop(state):
 	pop_files = {'Arizona': 'ss16paz.csv', 'California': 'ss16pca.csv', 'DC': 'ss16pdc.csv', 'Illinois': 'ss16pil.csv', 'Massachusetts': 'ss16pma.csv', 'New York': 'ss16pny.csv', 'Texas': 'ss16ptx.csv'}
@@ -115,7 +114,7 @@ def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins
 					if((battery_charged[j] <= battery*DoD) and (time <= stop)):
 						if((stop - time).seconds / 60 < 60):
 							# 5 minute window for the owner to come and start his vehicle
-							cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60 - 5) / 60 + CO2_tax[key]
+							cost += charging_rate * eff * (price[i] + CO2_tax[key] * 50 * 10 **(-6)) * ((stop - time).seconds / 60 - 5) / 60 
 							battery_charged[j] += charging_rate * ((stop - time).seconds / 60 - 5) / 60
 							break
 						battery_charged[j] += charging_rate	#hourly
@@ -128,8 +127,8 @@ def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins
 		total_cost = np.zeros(a)
 		battery_sold = np.zeros(a)
 		if battery_left is None:
-            battery_left = battery
-        for j in range(a):
+			battery_left = battery
+		for j in range(a):
 			time = time_start[j]
 			stop = rounddownTime([time + dt.timedelta(minutes = daily_work_mins[j])], roundTo = 60 * 5)[0]
 			money_earned = 0
@@ -137,8 +136,8 @@ def cost_calc(state, dates, price, time_start, time_stop = None, daily_work_mins
 				if(dates[i] == time):
 					if((price[i] >= set_SP) and (battery_sold[j] <= battery_left_to_sell[j]) and (time <= stop)):
 						if((stop - time).seconds / 60 < 60):
-    						# 5 minute window for the owner to come and start his vehicle
-							money_earned += charging_rate * eff * price[i] * ((stop - time).seconds / 60 - 5) / 60 + CO2_tax[key]
+							# 5 minute window for the owner to come and start his vehicle
+							money_earned += charging_rate * eff * (price[i] + CO2_tax[key] * 50 * 10 **(-6)) * ((stop - time).seconds / 60 - 5) / 60  
 							battery_sold[j] += charging_rate * ((stop - time).seconds / 60 - 5) / 60
 							break
 						battery_sold[j] += charging_rate
@@ -176,8 +175,8 @@ state = np.genfromtxt(prefix + 'PERV2PUB.CSV', delimiter = ',', dtype = None, us
 state_list = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'New York']
 mask = {'Arizona': 'AZ', 'California': 'CA', 'DC': 'DC', 'Illinois': 'IL', 'Massachusetts': 'MA', 'New York': 'NY', 'Texas': 'TX'}
 
-max_savings = {}
-pricetaker_savings = {}
+max_savings = {'oil': {}, 'combined_cycle': {}, 'wind': {}}
+pricetaker_savings = {'oil': {}, 'combined_cycle': {}, 'wind': {}}
 
 result_path = prefix + 'Results/{}/'.format(dt.datetime.today().date()) + 'CO2/'
 if not os.path.exists(result_path):
@@ -242,10 +241,10 @@ for s in state_list:
 		time_leave_home.append(time_leave[i-1])
 
 	time_leave_home = np.asarray(time_leave_home)
-	time_depart_from_home = []
 	
 	for key in CO2_tax:
 		
+		time_depart_from_home = []
 		for i in range(len(time_leave_home)):
 			time_depart_from_home.append(dt.datetime(2017,1,1,time_leave_home[i].hour, time_leave_home[i].minute, 0))
 
@@ -329,7 +328,7 @@ for s in state_list:
 		colors = ['#ffff00','#40E0D0','#ff0000', '#191970']
 		alpha = [1, 0.7, 0.5, 0.3]
 
-		sns.set(context = 'talk', style = 'darkgrid', font= 'Times New Roman', palette= 'hls')
+		sns.set(context = 'talk', style = 'darkgrid', palette= 'hls') #, font= 'Times New Roman'
 		mlib.rcParams['figure.figsize'] = (10, 8)
 		cdgdn_commute = np.mean(final_commute_cdgdn)
 		cch_commute = np.mean(final_commute_cost - final_commute_cdgdn)
@@ -349,8 +348,8 @@ for s in state_list:
 
 		argmax = np.argmax(mean)
 		state_key = '{}\n{}'.format(s,SP[argmax])
-		max_savings[state_key] = Annual_savings[argmax]
-		pricetaker_savings[s] = Annual_savings[0]
+		max_savings[key][state_key] = Annual_savings[argmax]
+		pricetaker_savings[key][s] = Annual_savings[0]
 
 		np.set_printoptions(precision = 2, threshold = np.inf)
 
@@ -364,10 +363,10 @@ for s in state_list:
 		output.write('efficiency = {} \nSP \t\tSavings mean\t\tCI95 \t\t\t Mean cycles\n'.format(eff))
 		for i in range(x):
 			output.write('{} \t\t{} \t\t{} \t\t{}\n'.format(SP[i], mean[i], y[i], np.mean(battery_cycles[i])))
-			output.write('cdgdn = {} \ncch = {} \nrt = {} \ncdgdn_commute = {} \ncch_commute = {} \n'.format(cdgdn, cch, rt, cdgdn_commute, cch_commute))
-			output.write('\n')
-			output.write('\ndistance = {}, mean = {:.2f} \ntime = {}, mean = {:.2f} \nwork hours = {}, mean = {:.2f} \n'.format(commute_dist, np.mean(commute_dist), commute_time, np.mean(commute_time), daily_work_mins/60.0, np.mean(daily_work_mins/60.0)))
-			output.close()
+		output.write('cdgdn = {} \ncch = {} \nrt = {} \ncdgdn_commute = {} \ncch_commute = {} \n'.format(cdgdn, cch, rt, cdgdn_commute, cch_commute))
+		output.write('\n')
+		output.write('\ndistance = {}, mean = {:.2f} \ntime = {}, mean = {:.2f} \nwork hours = {}, mean = {:.2f} \n'.format(commute_dist, np.mean(commute_dist), commute_time, np.mean(commute_time), daily_work_mins/60.0, np.mean(daily_work_mins/60.0)))
+		output.close()
 
 		#creating filenames for storing results
 		files, files1, files2 = [], [], []
@@ -390,6 +389,7 @@ for s in state_list:
 			plt.axvline(y[i][1], lw = 1, color = 'orange')
 			plt.ylabel(r'$Number\ of\ EV\ Users\ $')
 			plt.legend(loc = 'best', fontsize = 11)
+			print('Saving file!')
 			plt.savefig(files1[i])
 			plt.clf() #clear existing figure
 			#print(Annual_savings[i])
@@ -413,8 +413,10 @@ for s in state_list:
 			# yticks = np.round(np.arange(np.min(Annual_savings[i]), np.max(Annual_savings[i]), step= int((np.max(Annual_savings[i]) - np.min(Annual_savings[i]))/10))/500.0)*500
 			# g.ax_joint.set_yticks(yticks)
 			plt.title('SP = {}'.format(SP[i]))
+			print('Saving distance file!')
 			plt.savefig(files[i])
 			plt.close() #close the figure
+            
 			cmap = mlib.cm.hot
 			#cmap = sns.light_palette('#4682b4', as_cmap = True)
 			m = mlib.cm.ScalarMappable(cmap=cmap)
@@ -446,20 +448,23 @@ for s in state_list:
 			cbar1 = plt.colorbar(a, cax = cax)
 			cbar1.ax.set_ylabel('Annual savings from V2G')
 			plt.suptitle('SP = {}'.format(SP[i]))
+			print('Saving time file!')
 			plt.savefig(files2[i])
 			plt.close()
 
-	# end of state for loop
-	max_savings = pd.DataFrame.from_dict(max_savings)
-	sns.violinplot(data = max_savings)
+	# end of CO2 loop
+#end of state loop!
+
+for key in CO2_tax:
+	savings_violin_dict = pd.DataFrame.from_dict(max_savings[key])
+	sns.violinplot(data = savings_violin_dict)
 	plt.ylabel('Annual Savings from V2G($)')
-	plt.savefig(result_path + '/' + key + '/violin.svg')
+	plt.title('CO2 tax ({})'.format(key))
+	plt.savefig(result_path + '/' + key + '/violin_{}.svg'.format(key))
 	plt.close()
 
-	sns.violinplot(data = pd.DataFrame.from_dict(pricetaker_savings))
-	plt.savefig(result_path + '/' + key + '/pricetaker.svg')
+	sns.violinplot(data = pd.DataFrame.from_dict(pricetaker_savings[key]))
+	plt.savefig(result_path + '/' + key + '/pricetaker_{}.svg'.format(key))
 	plt.ylabel('Annual Savings from V2G')
-	plt.title('Price taker scenario')
+	plt.title('Price taker scenario ({})'.format(key))
 	plt.close()
-
-#end of the key loop!
