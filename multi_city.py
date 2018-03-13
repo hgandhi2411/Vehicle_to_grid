@@ -8,7 +8,7 @@ import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
 from pandas.tseries.holiday import USFederalHolidayCalendar
 import scipy.stats as ss
-#from matplotlib.patches import Ellipse
+import os
 
 prefix = 'C:/Users/hetag/Desktop/Vehicle_to_grid/'
 # Required numbers
@@ -23,7 +23,7 @@ DoD = 0.90   #depth of discharge
 charging_rate = 11.5	#kWh/hr		
 # Considering AC Level2 Charging using SAE J1772 (240V/80A), standard on board chargers are capable of delivering 48A with the high amperage version being able to deliver 72A - tesla.com
 # Super charger gives 17.2 kWh/hr charging rate
-complete_charging_time = 420 	#minutes(7 hrs) for the Level2 charger to charge Tesla S60
+complete_charging_time = 390 	#minutes(7 hrs) for the Level2 charger to charge Tesla S60
 
 #battery degradation cost
 lifecycles = 5300		#for lithium ion battery from Gerad's article
@@ -173,6 +173,11 @@ mask = {'Arizona': 'AZ', 'California': 'CA', 'DC': 'DC', 'Illinois': 'IL', 'Mass
 max_savings = {}
 pricetaker_savings = {}
 
+result_path = prefix + 'Results/{}/'.format(dt.datetime.today().date()) + 'multi_city/'
+if not os.path.exists(result_path):
+    # print('making a new dir!')
+    os.makedirs(result_path)
+
 for s in state_list:
 	
 	print(s)
@@ -311,16 +316,10 @@ for s in state_list:
 				time_arrival_work[i] += dt.timedelta(days = 1)
 
 
-	#print(day.date(), 'Battery cycles =',battery_cycles)
-	colors = ['#ffff00','#40E0D0','#ff0000', '#191970']
-	alpha = [1, 0.7, 0.5, 0.3]
-
-	sns.set(context = 'talk', style = 'darkgrid', font= 'Times New Roman', palette= 'hls')
-	mlib.rcParams['figure.figsize'] = (10, 8)
 	cdgdn_commute = np.mean(final_commute_cdgdn)
 	cch_commute = np.mean(final_commute_cost - final_commute_cdgdn)
 	Annual_savings = np.zeros((x,Sample))
-	mean, cdgdn, cch, rt, y = [], [], [], [], []
+	mean, y = [], [] #, cdgdn, cch, rt, [], [], []
 	ci = 0.95
 	z = ss.norm.ppf((1+ci)/2)
 
@@ -329,10 +328,13 @@ for s in state_list:
 		#Calculating statistics and CIs
 		mean.append(np.mean(Annual_savings[i]))
 		y.append(np.percentile(Annual_savings[i], [2.5, 97.5]))
-		cdgdn.append(np.mean(final_cdgdn[i]))
-		cch.append(np.mean(final_charge_cost[i] - final_cdgdn[i]))
-		rt.append(np.mean(final_discharge_cost[i])) #revenue from V2G
+		# cdgdn.append(np.mean(final_cdgdn[i]))
+		# cch.append(np.mean(final_charge_cost[i] - final_cdgdn[i]))
+		# rt.append(np.mean(final_discharge_cost[i])) #revenue from V2G
 
+	
+	if not os.path.exists(result_path + s):
+		os.makedirs(result_path + s)
 	argmax = np.argmax(mean)
 	key = '{} {}'.format(s,SP[argmax])
 	max_savings[key] = Annual_savings[argmax]
@@ -340,104 +342,37 @@ for s in state_list:
 
 	np.set_printoptions(precision = 2, threshold = np.inf)
 	#Writing values to a file
-	output = open(prefix + 'Results/' + s + '/data.txt', 'w')
-	output.write('efficiency = {} \nSP \t\tSavings mean\t\tCI95 \t\t\t Mean cycles\n'.format(eff))
-	for i in range(x):
-		output.write('{} \t\t{} \t\t{} \t\t{}\n'.format(SP[i], mean[i], y[i], np.mean(battery_cycles[i])))
-	output.write('cdgdn = {} \ncch = {} \nrt = {} \ncdgdn_commute = {} \ncch_commute = {} \n'.format(cdgdn, cch, rt, cdgdn_commute, cch_commute))
-	output.write('\n')
-	output.write('\ndistance = {}, mean = {:.2f} \ntime = {}, mean = {:.2f} \nwork hours = {}, mean = {:.2f} \n'.format(commute_dist, np.mean(commute_dist), commute_time, np.mean(commute_time), daily_work_mins/60.0, np.mean(daily_work_mins/60.0)))
-	output.close()
+	output = result_path + '{}/data.csv'.format(s)
+	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home}
+	results.update({'Savings{}'.format(a):b for a,b in zip(SP, Annual_savings)})
+	results.update({'Cycle{}'.format(a):b for a,b in zip(SP, battery_cycles)})
+	results = pd.DataFrame.from_dict(results)
+	results.to_csv(output)
 
-	#creating filenames for storing results
-	files, files1, files2 = [], [], []
-	for i in range(x):
-		files1.append(prefix + 'Results/' + s + '/Savings{}.svg'.format(SP[i]))
-		files.append(prefix + 'Results/' + s + '/Distance{}.svg'.format(SP[i]))
-		files2.append(prefix + 'Results/' + s + '/Time{}.svg'.format(SP[i]))
 
-	#Histogramming data
-	low = math.floor(np.amin(Annual_savings))
-	high = math.ceil(np.amax(Annual_savings))
-	bins = np.linspace(low, high, 20)
-
-	for i in range(x):
-		plt.hist(Annual_savings[i], bins = bins, alpha = 0.8, label = 'SP = {} \nMean cycles = {:.2f}'.format(SP[i], np.mean(battery_cycles[i])), fc = None, ec = None)
-		#plt.text(-100,150,'Mean cycles = {}'.format(np.mean(battery_cycles[i])))
-		#plt.title(r'$ Optimal\ scenario\ - Comparison\ of\ different\ selling\ prices\ $')
-		plt.xlabel(r'$Savings\ from\ V2G\ over\ normal\ commute (\$) $')
-		plt.axvline(y[i][0], lw = 1, color = 'orange')
-		plt.axvline(y[i][1], lw = 1, color = 'orange')
-		plt.ylabel(r'$Number\ of\ EV\ Users\ $')
-		plt.legend(loc = 'best', fontsize = 11)
-		plt.savefig(files1[i])
-		plt.clf() #clear existing figure
-		#print(Annual_savings[i])
-
-	plt.close() #close existing figure
-
-	def square_plot(ax):
-		#make the aspect ratio of data match that of plot
-		xl, xh, yl, yh = ax.axis()
-		ax.set_aspect((xh - xl) / (yh - yl), adjustable='box')
-
-	time_depart = np.zeros(Sample)
-	for i in range(Sample):
-		time_depart[i] = time_depart_from_home[i].hour + time_depart_from_home[i].minute/60
-
-	for i in range(x):
-
-		# distance jointplot
-		g = (sns.jointplot(commute_dist, Annual_savings[i], kind = 'hex', gridsize = 20, marginal_kws={'bins': 20})).set_axis_labels("Commute distance", "Annual Savings")
-		# g.ax_joint.add_patch(ellipse)
-		# yticks = np.round(np.arange(np.min(Annual_savings[i]), np.max(Annual_savings[i]), step= int((np.max(Annual_savings[i]) - np.min(Annual_savings[i]))/10))/500.0)*500
-		# g.ax_joint.set_yticks(yticks)
-		plt.title('SP = {}'.format(SP[i]))
-		plt.savefig(files[i])
-		plt.close() #close the figure
-		cmap = mlib.cm.hot
-		#cmap = sns.light_palette('#4682b4', as_cmap = True)
-		m = mlib.cm.ScalarMappable(cmap=cmap)
-		m.set_array(Annual_savings[i]) 
-		
-
-		# a weighted joint plot showing relation between time, time of departure and savings 
-		fig = plt.figure(figsize=(8, 7))
-		grid = plt.GridSpec(2, 3, width_ratios = [3,1, 0.1], height_ratios=[1,3], hspace=0.05, wspace= 0.07) # hspace = 0.1, wspace = 0.2
-		main_ax = fig.add_subplot(grid[1,0])
-		y_hist = fig.add_subplot(grid[1,1], yticklabels=[]) #sharey=main_ax)# , xticklabels=[], yticklabels=[])#
-		x_hist = fig.add_subplot(grid[0,0], xticklabels=[]) #sharex=main_ax)# , yticklabels=[], xticklabels=[])# 
-		cax = fig.add_subplot(grid[1,2])
-
-		# scatter points on the main axes
-		a = main_ax.hexbin(commute_time, time_depart, C = Annual_savings[i] , cmap = cmap, gridsize = 15, vmin = low, vmax = high, edgecolors = None)
-		main_ax.set_xlabel('')
-
-		# histogram on the attached axes
-		x_hist.hist(commute_time, 15, histtype='bar',
-					orientation='vertical', color = '#ffa07a')
-		#x_hist.invert_yaxis()
-
-		y_hist.hist(time_depart, 15, histtype='bar',
-					orientation='horizontal', color = '#ffa07a')
-		y_hist.invert_xaxis()
-
-		#fig.subplots_adjust(right = 0.9)
-		cbar1 = plt.colorbar(a, cax = cax)
-		cbar1.ax.set_ylabel('Annual savings from V2G')
-		plt.suptitle('SP = {}'.format(SP[i]))
-		plt.savefig(files2[i])
-		plt.close()
-
+sns.set(context = 'talk', style = 'darkgrid', font= 'Times New Roman', palette= 'hls')
+mlib.rcParams['figure.figsize'] = (10, 8)
+	
 # end of state for loop
 max_savings = pd.DataFrame.from_dict(max_savings)
 sns.violinplot(data = max_savings)
 plt.ylabel('Annual Savings from V2G($)')
-plt.savefig('Results/violin.svg')
+plt.savefig(prefix + 'Results/violin.svg')
 plt.close()
 
 sns.violinplot(data = pd.DataFrame.from_dict(pricetaker_savings))
-plt.savefig('Results/pricetaker.svg')
 plt.ylabel('Annual Savings from V2G')
 plt.title('Price taker scenario')
+plt.savefig(prefix + 'Results/pricetaker.svg')
+plt.close()
+
+sns.boxplot(data = max_savings)
+plt.ylabel('Annual Savings from V2G($)')
+plt.savefig(prefix + 'Results/box.svg')
+plt.close()
+
+sns.boxplot(data = pd.DataFrame.from_dict(pricetaker_savings))
+plt.ylabel('Annual Savings from V2G')
+plt.title('Price taker scenario')
+plt.savefig(prefix + 'Results/box_pricetaker.svg')
 plt.close()
