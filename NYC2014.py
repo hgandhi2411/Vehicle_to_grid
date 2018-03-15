@@ -7,10 +7,9 @@ import datetime as dt
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
 from pandas.tseries.holiday import USFederalHolidayCalendar
-import scipy.stats as ss
-from matplotlib.patches import Ellipse
+import os
 
-
+prefix = 'C:/Users/hetag/Desktop/Vehicle_to_grid/'
 # Required numbers
 Sample = 2559    #total EVs in NYC 2015
 Actual_battery = 75	#kWh 60Kwh discontinued
@@ -172,6 +171,10 @@ print('Commute time = ', commute_time)
 battery_used_for_travel = 2 * commute_dist/dist_one_kWh  #kWh
 battery_left_to_sell = battery*DoD - battery_used_for_travel
 
+result_path = prefix + 'Results/{}/'.format(dt.datetime.today().date()) + 'nyc/'
+if not os.path.exists(result_path):
+    # print('making a new dir!')
+    os.makedirs(result_path)
 
 # Sampling departure times
 Time_depart_for_work = np.genfromtxt('ss15pny.csv', delimiter = ',', filling_values = 0, skip_header = 1, usecols = (95), dtype = None)
@@ -280,7 +283,7 @@ while(count <= working_days):
 colors = ['#ffff00','#40E0D0','#ff0000', '#191970']
 alpha = [1, 0.7, 0.5, 0.3]
 
-sns.set(context = 'talk', style = 'dark')
+sns.set(context = 'talk', style = 'darkgrid', palette='hls')
 mlib.rcParams['figure.figsize'] = (10, 8)
 cdgdn_commute = np.mean(final_commute_cdgdn)
 cch_commute = np.mean(final_commute_cost - final_commute_cdgdn)
@@ -308,6 +311,14 @@ output.write('cdgdn = {} \ncch = {} \nrt = {} \ncdgdn_commute = {} \ncch_commute
 output.write('\n')
 #output.write('\ndistance = {}, mean = {:.2f} \ntime = {}, mean = {:.2f} \nwork hours = {}, mean = {:.2f} \n'.format(commute_dist, np.mean(commute_dist), commute_time, np.mean(commute_time), daily_work_mins/60.0, np.mean(daily_work_mins/60.0)))
 output.close()
+
+#Writing values to a file
+output = result_path + '{}/data.csv'.format(s)
+results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home}
+results.update({'Savings{}'.format(a):b for a,b in zip(SP, Annual_savings)})
+results.update({'Cycle{}'.format(a):b for a,b in zip(SP, battery_cycles)})
+results = pd.DataFrame.from_dict(results)
+results.to_csv(output)
 
 #creating filenames for storing results
 files, files1, files2 = [], [], []
@@ -370,7 +381,7 @@ for i in range(x):
 	cax = fig.add_subplot(grid[1,2])
 
 	# scatter points on the main axes
-	a = main_ax.hexbin(commute_time, time_depart, C = Annual_savings[i] , cmap = cmap, gridsize = 15, vmin = low, vmax = high)
+	a = main_ax.hexbin(commute_time, time_depart, C = Annual_savings[i] , cmap = cmap, gridsize = 15, vmin = low, vmax = high, ec = 'none')
 	main_ax.set_xlabel('')
 
 	# histogram on the attached axes
