@@ -23,7 +23,7 @@ print(battery)
 dist_one_kWh = np.array([rated_dist_dict[i] for i in battery])
 complete_charging_time = np.array([charge_time_dict[i] for i in battery])
 
-eff = 0.95 #roundtrip efficiency of Tesla S 
+eff = 0.62 #roundtrip efficiency of Tesla S 
 #reference: Shirazi, Sachs 2017
 DoD = 0.90   #depth of discharge
 charging_rate = 11.5		
@@ -41,8 +41,10 @@ lcos = 1142/1000			# $/kWh, Lazards LCOS V2.0 2016, Commercial lithium ion categ
 working_days = 250
 
 #For optimal scenario we need a set selling price
-SP = [0] #, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20]		#$/kWh
+SP = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20]		#$/kWh
 x = len(SP)
+
+np.set_printoptions(precision = 2, threshold = np.inf)
 
 def state_pop(state):
 	pop_files = {'Arizona': 'ss16paz.csv', 'California': 'ss16pca.csv', 'DC': 'ss16pdc.csv', 'Illinois': 'ss16pil.csv', 'Massachusetts': 'ss16pma.csv', 'New York': 'ss16pny.csv', 'Texas': 'ss16ptx.csv'}
@@ -174,6 +176,11 @@ time = np.genfromtxt(prefix + 'PERV2PUB.CSV', delimiter = ',', dtype = None, ski
 state = np.genfromtxt(prefix + 'PERV2PUB.CSV', delimiter = ',', dtype = None, usecols = (48), skip_header= 1, filling_values = 0)		#state in column 49 of PERV2PUB.csv
 state_list = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'New York']
 mask = {'Arizona': 'AZ', 'California': 'CA', 'DC': 'DC', 'Illinois': 'IL', 'Massachusetts': 'MA', 'New York': 'NY', 'Texas': 'TX'}
+
+result_path = prefix + 'Results/{}/'.format(dt.datetime.today().date()) + 'var_bat/'
+if not os.path.exists(result_path):
+    # print('making a new dir!')
+    os.makedirs(result_path)
 
 max_savings = {}
 pricetaker_savings = {}
@@ -342,13 +349,22 @@ for s in state_list:
 		rt.append(np.mean(final_discharge_cost[i])) #revenue from V2G
 
 	argmax = np.argmax(mean)
-	key = '{} {}'.format(s,SP[argmax])
+	key = '{}\n{}'.format(s,SP[argmax])
 	max_savings[key] = Annual_savings[argmax]
 	pricetaker_savings[s] = Annual_savings[0]
 
-	np.set_printoptions(precision = 2, threshold = np.inf)
+
+	if not os.path.exists(result_path + s):
+		os.makedirs(result_path + s)
+	output = result_path + '{}/data.csv'.format(s)
+	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery}
+	results.update({'Savings{}'.format(a):b for a,b in zip(SP, Annual_savings)})
+	results.update({'Cycle{}'.format(a):b for a,b in zip(SP, battery_cycles)})
+	results = pd.DataFrame.from_dict(results)
+	results.to_csv(output)
+
 	#Writing values to a file
-	output = open(prefix + 'Results/' + s + '/data.txt', 'w+')
+	output = open(result_path + s + '/data.txt', 'w+')
 	output.write('efficiency = {} \nSP \t\tSavings mean\t\tCI95 \t\t\t Mean cycles\n'.format(eff))
 	for i in range(x):
 		output.write('{} \t\t{} \t\t{} \t\t{}\n'.format(SP[i], mean[i], y[i], np.mean(battery_cycles[i])))
@@ -360,10 +376,10 @@ for s in state_list:
 	#creating filenames for storing results
 	files, files1, files2, files3 = [], [], [], []
 	for i in range(x):
-		files1.append(prefix + 'Results/' + s + '/Savings{}.svg'.format(SP[i]))
-		files.append(prefix + 'Results/' + s + '/Battery{}.svg'.format(SP[i]))
-		files2.append(prefix + 'Results/' + s + '/Time{}.svg'.format(SP[i]))
-		files3.append(prefix + 'Results/' + s + '/Distance{}.svg'.format(SP[i]))
+		files1.append(result_path + s + '/Savings{}.svg'.format(SP[i]))
+		files.append(result_path + s + '/Battery{}.svg'.format(SP[i]))
+		files2.append(result_path + s + '/Time{}.svg'.format(SP[i]))
+		files3.append(result_path + s + '/Distance{}.svg'.format(SP[i]))
 
 	#Histogramming data
 	low = math.floor(np.amin(Annual_savings))

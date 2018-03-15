@@ -1,0 +1,262 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>ACS</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/simple.css">
+		<link rel="stylesheet" href="css/reveal-override.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+	  <div class="reveal">
+
+	    <div class="slides">
+
+	      <div style="" class="footer">
+		<p class="footer-img pull-left">
+		  <img src="img/URLogo.png" height="40px"/>
+		</p>
+		<p class="pull-right footer-text"><span class="footer-link"><a href="http://thewhitelab.org"> http://thewhitelab.org</a></span>| Heta Gandhi </p>
+	      </div>
+
+	      <section class="center" data-background-size="contain" data-background-color="#153b70" data-background-image="img/slide.svg">
+					<h4 class="bright">Can Parked Cars and Carbon Taxes Create a Profit? <br/>The Economics of Vehicle-to-Grid Energy Storage<br/> for Peak Reduction</h4>
+
+					<p class="dull"><small>Heta Gandhi</small></p>
+					<p class="dull">
+						<small> ACS, New Orleans<br/>
+							March 19th, 2018</small>
+					</p>
+	      </section>
+
+	      <section>
+
+					<section class="">
+						<p> Concept of <span class="attn"> Vehicle-to-Grid (V2G)</span> </p>
+						
+						<img src="img/concept_v2g.png" width="600px"/>
+						<!-- <p class="left-align"> We study:</p>
+							<ol style="font-size: 70%">
+								<li> Modeling peptides for antifouling, antimicrobial activity, and self-assembly.<br> <span class="dull"> PhD research </span></li>
+								<li> Simulating distributed grid energy storage.<br> <span class="dull"> MS only research </span></li>
+								<li> Creating Interactive Augmented-Reality STEM Laboratories. <br><span class="dull"> PhD student time, collaborative, outreach </span></li>
+							</ol> -->
+					</section>
+				</section>
+	<section>
+
+		<section hide-footer="yes">
+		  <p class="left-align"> The modeled system are monolayer peptide coatings and self-assembly. <br> Peptides are chains of connected monomers chosen from a set of 20 amino acids</p>
+		  <div class="frag-container">
+		    <div class="fragment fade-out multi-frag" data-fragment-index="1">
+		      <div>
+			<img src="img/aa_introduction_1.svg" width="800px"/>
+		      </div>
+		    </div>
+		    <div class="fragment fade-in multi-frag" data-fragment-index="1">
+		      <div>
+			<img src="img/aa_introduction_2.svg" width="800px"/>
+		      </div>
+		    </div>
+		  </div>
+
+		</section>
+
+		<section data-background="#FFF">
+		  <h3> Peptide Example: </h3>
+
+		  <img class="stretch" src="img/peptide_introduction_2.svg">
+
+		  <video width="350px" data-autoplay loop data-src="mov/peptide_rot.mp4"></video>
+
+		</section>
+
+		<section>
+		  <h3> Specific sequences exist for:</h3>
+
+		  <ul class="small">
+		    <li>Antimicrobials$^1$ </li>
+		    <li>Protein binding (drug molecules) $^2$</li>
+		    <li>Nucleating crystal structures $^3$</li>
+		    <li>Binding to specific metals$^4$</li>
+		    <li>Resisting protein adsorption$^5$</li>
+		    <li>Anchoring mammalian cells on a substrate$^5$</li>
+		    <li>Self-assembling into a monolayer$^5$</li>
+		    <li>Disease model for Alzheimers$^3$</li>
+		  </ul>
+
+		  <hr>
+
+		  <div class="footnotes">
+		    <ol class="">
+		      <li> White AD, et al. <i> J. Chem. Inf. Model. </i> <strong> 2013</strong> 53:493-499</li>
+		      <li> Fosgerau K and Hoffman T <i> Drug Disovery Today </i> <strong> 2015</strong> 20:122-128</li>
+		      <li> Reches M and Gazit E <i> Science </i> <strong> 2003</strong> 300:625-627</li>
+		      <li> Thai C, et al. <i> Biotech. Bioeng. </i> <strong> 2004</strong> 87:129-137</li>
+		      <li> AK Nowinski, et al.<i> J. Amer. Chem. Soc. </i> <strong> 2012</strong> 134:6000-6005</li>
+		    </ol>
+		  </div>
+		</section>
+
+		<section hide-footer="yes" data-background-size="contain" data-background-image="img/sizes.png" data-background-color="#AAA">
+
+		</section>
+
+		<section hide-footer="yes" data-background-transition="fade" data-transition="fade" data-background-size="contain" data-background-image="img/sizes_blank.png" data-background-color="#AAA">
+		  <h4> Comparing Peptides to other Biomacromolecules </h4>
+
+			<div class="text-background-dark">
+		  <dl class="small">
+		    <dt> Peptides </dt>
+		    <dd> Small monomers, huge sample space, properties arise from <span class="attn"> intermolecular</span> weak interactions</dd>
+		    <dt> Proteins </dt>
+		    <dd> Small monomers, huge sample space, properties arise from <span class="attn"> intramolecular</span> weak interactions</dd>
+		    <dt> RNA </dt>
+		    <dd> Large monomers, small sample space, properties arise from both <span class="attn"> intramolecular and intermolecular</span> strong interactions</dd>
+		    <dt> DNA </dt>
+		    <dd> Large monomers, small sample space, properties arise from <span class="attn"> intermolecular</span> strong interactions</dd>
+			</dl>
+		</div>
+
+		</section>
+
+	      <section hide-footer="yes" data-background="img/biomaterial_plain.png">
+
+		<h4> Peptides can be coated onto surfaces</h4>
+
+
+	      </section>
+
+
+	      <section hide-footer="yes" data-transition="slide" data-background-transition="slide" data-background="img/spr_surface.png">
+
+		<h4> Peptides can tether antiobodies on surfaces</h4>
+
+	      </section>
+
+
+	      <section hide-footer="yes" data-background="img/nanoparticles.png">
+		<div class="fill-500"></div>
+		<h4 class="attn"> Peptides can be coated onto nanoparticles</h4>
+
+	  </section>
+
+	</section>
+	<section>
+
+			<section class="center" data-background-image="img/slide.svg">
+				<p class="bright">Modeling Peptides with Molecular Dynamics & Systematic Multiscale Modeling</p>
+			</section>
+
+				<section data-background-video="mov/lj_plot.mp4" data-background-size="contain" data-background="#000" hide-footer="yes">
+					<h4 class="bright"><span class="red">Molecular Dynamics</span> goes from the interaction energy of molecules...</h4>
+
+				</section>
+
+				<section hide-footer="yes" data-background-video="mov/lj_sim.mp4" data-background-size="contain" data-background="#000000">
+					<h4 class="bright">...to properties of ensembles of molecules</h4>
+
+				</section>
+
+				<section hide-footer="yes" data-background="#000000">
+					<h4 class="bright">We use <span class="red">molecular dynamics</span> to study interactions of peptides</h4>
+					<video src="mov/peptides.mp4" width="839px" height="547px" autoplay loop></video>
+					<div class="footnotes bright">
+						Enhanced Sampling with Experiment Directed Simulation of the GYG Peptide
+						DB Amirkulova, AD White.
+						(2017)
+						<i>Submitted.</i>
+					</div>
+				</section>
+
+				<section>
+					<h4> Peptide Structure is Multiscale</h4>
+						<img src="img/self-assembly.png" width="450px">
+				</section>
+
+				<section>
+					<h4> <span class="red">Systematic Multiscale Modeling</span> groups atoms into beads to remove unnecessary complexity</h4>
+					<img src="img/comparison.png" width="900px">
+				</section>
+				<section>
+					<h4> Our innovation is an automated and first-principles based approach to applying multiscale modeling</h4>
+						<img src="img/cv.svg" width="500px">
+						<div class="footnotes">
+							Developing Hierarchical Graphs Encoding Coarse-Grain Mapping Operators.
+      C Maghesree, C Xu, AD White
+      (2018)
+      <i>Submitted.</i>
+						</div>
+				</section>
+				<section>
+					<h4> For complex phenomena, like the efficacy of a drug, <span class="red">statisitcal learning</span> techniques can be used to screen or predict<h4>
+						<img src="img/motif_model_new.svg" width="425px">
+
+						<div class="footnotes">
+						Classifying Antimicrobial and Multifunctional Peptides with Bayesian Network Models.
+      			R Barrett, S Jiang, AD White .
+      			(2017)
+						<i>Submitted.</i>
+						</div>
+				</section>
+				<section class="center">
+					These statistical learning techniques allow both modeling sophisticated structure like motifs in macromolecules and excel in working with medium dataset sizes (~50-500)
+				</section>
+		</section>
+	  <section>
+			<section class="center">
+				<h4>Grid Energy Storage...</h4>
+			</section>
+		</section>
+
+	    </div>
+	  </div>
+
+	  <script src="lib/js/head.min.js"></script>
+	  <script src="https://cdn.jsdelivr.net/jquery/3.2.0/jquery.min.js"></script>
+	  <script src="js/reveal.js"></script>
+	  <script src="js/custom.js"></script>
+
+	  <script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+			        controls: false,
+			        progress: true,
+                                center: false,
+			        viewDistance: 5,
+			        theme: 'simple',
+			        slideNumber: 'c / t',
+			        transition: 'convex', // none/fade/slide/convex/concave/zoom
+			        backgroundTransition: 'fade',
+
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+			{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+			{ src: 'plugin/math/math.js', async: true }
+				]
+			});
+
+			Reveal.addEventListener('slidechanged', footer_hider);
+
+		</script>
+	</body>
+</html>

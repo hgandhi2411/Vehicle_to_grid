@@ -313,7 +313,7 @@ output.write('\n')
 output.close()
 
 #Writing values to a file
-output = result_path + '{}/data.csv'.format(s)
+output = result_path + 'data.csv'
 results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home}
 results.update({'Savings{}'.format(a):b for a,b in zip(SP, Annual_savings)})
 results.update({'Cycle{}'.format(a):b for a,b in zip(SP, battery_cycles)})

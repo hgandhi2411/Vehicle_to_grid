@@ -4,9 +4,10 @@ import matplotlib.pyplot as plt
 import os
 import seaborn as sns
 
-plt.rcParams['figure.figsize'] = (10.0, 5.0)
+plt.rcParams['figure.figsize'] = (10.0, 8.0)
 sns.set(style= "darkgrid", context="talk", palette='hls')
 
+sample = 2559.
 year = np.arange(2010, 2051, 1)
 x_predict  = np.zeros(len(year))
 historical_battery_prices = np.array([1000, 800, 642, 599, 540, 350, 273, 162, 73, 50]) #$/kWh from bloomberg 2017 report
@@ -59,7 +60,7 @@ for s in states:
         bat_degradation = battery * value/energy_throughput
         #print(bat_degradation*eff*charging_cycles)
         annual_savings = discharging_cost - (charging_cost + charging_cycles * battery * bat_degradation * eff) - (0 - (commute_cost + commute_cycles * battery * bat_degradation * eff))
-        final_results[s][key] = np.mean(annual_savings)
+        final_results[s][key] = annual_savings
         # outliers = percentile_based_outlier(annual_savings, threshold = 90)
         # final_outliers[s][key] = annual_savings[outliers]
         # no_outliers = outliers == False
@@ -76,8 +77,10 @@ for s in states:
 
 for key in final_results:
     x = list(final_results[key].keys())
-    y = list(final_results[key].values())
-    plt.plot(x, y, label = '{}'.format(key))
+    y = [np.mean(a) for a in final_results[key].values()]
+    yerr = np.sqrt(np.array([np.var(a, ddof = 1) for a in final_results[key].values()]) / sample)
+    # plt.plot(x, y, '.', label = '{}'.format(key))
+    plt.errorbar(x, y, yerr = yerr, fmt = '.', markeredgewidth=2, label = '{}'.format(key))
 
 plt.xticks(rotation = 45)
 plt.legend()
