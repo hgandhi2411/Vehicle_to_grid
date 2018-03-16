@@ -82,7 +82,9 @@ for key in final_results:
     # plt.plot(x, y, '.', label = '{}'.format(key))
     plt.errorbar(x, y, yerr = yerr, fmt = '.', markeredgewidth=2, label = '{}'.format(key))
 
-plt.xticks(rotation = 45)
+plt.xticks(rotation = 30)
+plt.ylabel('Savings from V2G($)')
+plt.xlabel('Year') 
 plt.legend()
 plt.savefig(result_path + 'future_cost.svg')#.format(s))
 plt.close()

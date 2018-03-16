@@ -31,13 +31,13 @@
 		<p class="footer-img pull-left">
 		  <img src="img/URLogo.png" height="40px"/>
 		</p>
-		<p class="pull-right footer-text"><span class="footer-link"><a href="http://thewhitelab.org"> http://thewhitelab.org</a></span>| Heta Gandhi </p>
+		<p class="pull-right footer-text"><span class="footer-link"><a href="http://thewhitelab.org"> http://thewhitelab.org</a></span></p>
 	      </div>
 
 	      <section class="center" data-background-size="contain" data-background-color="#153b70" data-background-image="img/slide.svg">
 					<h4 class="bright">Can Parked Cars and Carbon Taxes Create a Profit? <br/>The Economics of Vehicle-to-Grid Energy Storage<br/> for Peak Reduction</h4>
 
-					<p class="dull"><small>Heta Gandhi</small></p>
+					<p class="dull"><small>Heta Gandhi, Andrew White</small></p>
 					<p class="dull">
 						<small> ACS, New Orleans<br/>
 							March 19th, 2018</small>
@@ -48,179 +48,219 @@
 
 					<section class="">
 						<p> Concept of <span class="attn"> Vehicle-to-Grid (V2G)</span> </p>
-						
-						<img src="img/concept_v2g.png" width="600px"/>
-						<!-- <p class="left-align"> We study:</p>
-							<ol style="font-size: 70%">
-								<li> Modeling peptides for antifouling, antimicrobial activity, and self-assembly.<br> <span class="dull"> PhD research </span></li>
-								<li> Simulating distributed grid energy storage.<br> <span class="dull"> MS only research </span></li>
-								<li> Creating Interactive Augmented-Reality STEM Laboratories. <br><span class="dull"> PhD student time, collaborative, outreach </span></li>
-							</ol> -->
+						<p class="center-align" style="line-height: 0.3">
+							<img src="img/v2g.gif" width="500px"/> <br>
+						<font size="3" >Source: Nissan Europe Youtube Channel</font></p>
+						<!-- Find a way to make the following text appear when I click -->
+						<p class="fragment left-align"data-fragment-index="1"> <font size="5"> Infrastructure needed for V2G technology:
+							<ol style="font-size: 60%">
+								<li class="fragment" data-fragment-index="1"> Bi-directional metering system</li>
+								<li class="fragment" data-fragment-index="1"> Robust control systems in Electric Vehicles(EV) to monitor the battery capacity left </li>
+							</ol> </font> </p>	
 					</section>
 				</section>
+
 	<section>
 
-		<section hide-footer="yes">
-		  <p class="left-align"> The modeled system are monolayer peptide coatings and self-assembly. <br> Peptides are chains of connected monomers chosen from a set of 20 amino acids</p>
-		  <div class="frag-container">
-		    <div class="fragment fade-out multi-frag" data-fragment-index="1">
-		      <div>
-			<img src="img/aa_introduction_1.svg" width="800px"/>
-		      </div>
-		    </div>
-		    <div class="fragment fade-in multi-frag" data-fragment-index="1">
-		      <div>
-			<img src="img/aa_introduction_2.svg" width="800px"/>
-		      </div>
-		    </div>
-		  </div>
+		<section >
+			<p class="left-align"> The Model <br> 
+				<ol style="font-size: 70%">
+					<li> Economics of V2G in New York City</li>
+					<li> Use of location based marginal pricing (LBMP)</li>
+					<li> Accounts for battery cycling and degradation </li>
+					<li> Three scenarios
+						<ul style="font-size: 80%">
+							<li> Work-hour Price-taker </li>
+							<li> Arbitrage-guided</li>
+							<li> Optimal Selling Price</li>
+						</ul>
+					</li>
+				</ol></p>
+				<img src="img/models_white_wall_2x.jpg" width="450px"/>	
+				
+				<div class="footnotes">
+						Freeman GM, et al. <i> Energy Policy </i> <strong> 2017</strong> 106:183-190
+				</div>
+				
 
 		</section>
 
+
 		<section data-background="#FFF">
-		  <h3> Peptide Example: </h3>
+				<p class="left-align"> Nomenclature 
+					<br>
+					<font size="5">
+					$c_{ch}$: Price of charging<br>
+					$c_{dgdn}$: Cost of battery degradation<br>
+					$r(t)$: Revenue earned from V2G<br>
+					$E_{s,max}$: Battery capacity(kWh)<br>
+					$c_b$: Battery capital cost (&dollar/kWh)<br>
+					$DoD$: Depth of discharge<br>
+					$L_c$: Battery lifecycles<br>
+					$E_s(t)$: Battery's remaining capacity at time t<br>
+					$LBMP(t)$: Location based maginal price at time t<br>
+					$\eta$: Round trip efficiency of the vehicle<br>
+					</font>
+				</p>
+	
+		</section>
 
-		  <img class="stretch" src="img/peptide_introduction_2.svg">
 
-		  <video width="350px" data-autoplay loop data-src="mov/peptide_rot.mp4"></video>
-
+		<section data-background="#FFF">
+			<p> Methods </p>
+			<p class="left-align" style="font-size: 18pt">
+				Battery degradation cost$^1$ <br>$$c_{dgdn} = \frac{E_{s,max} c_b}{2\ DoD \ L_c E_{s,max}}$$<br>
+			</p>
+			<p class="left-align" style="font-size: 18pt">
+					Revenue from V2G <br>
+					$$r(t) = (E_s(t - 1) - E_s(t))\ \eta\ LBMP(t)$$<br>
+			</p>
+			<p class="left-align" style="font-size: 18pt">
+					Savings from V2G <br>
+					$$S= \sum_{working\ days} \bigg[ \Big(\sum r(t) - \sum (c_{ch}(t) + c_{dgdn}(t))\Big)_{V2G} \\ - \Big(\sum (0 - (c_{ch}(t) + c_{dgdn}(t))\Big)_{Commute} \bigg]$$
+			</p>
+			<div class="footnotes">
+				<ol class="">
+					<li>Kempton, et al. <i> J. Power Sources </i> <strong> 2005</strong> 144:268-294</li>
+				</ol>
+		  </div>
 		</section>
 
 		<section>
-		  <h3> Specific sequences exist for:</h3>
+		  <p> Results</p>
 
-		  <ul class="small">
-		    <li>Antimicrobials$^1$ </li>
-		    <li>Protein binding (drug molecules) $^2$</li>
-		    <li>Nucleating crystal structures $^3$</li>
-		    <li>Binding to specific metals$^4$</li>
-		    <li>Resisting protein adsorption$^5$</li>
-		    <li>Anchoring mammalian cells on a substrate$^5$</li>
-		    <li>Self-assembling into a monolayer$^5$</li>
-		    <li>Disease model for Alzheimers$^3$</li>
-		  </ul>
-
-		  <hr>
-
+			<img src="img/Gerad_results.svg" width="550px">
 		  <div class="footnotes">
-		    <ol class="">
-		      <li> White AD, et al. <i> J. Chem. Inf. Model. </i> <strong> 2013</strong> 53:493-499</li>
-		      <li> Fosgerau K and Hoffman T <i> Drug Disovery Today </i> <strong> 2015</strong> 20:122-128</li>
-		      <li> Reches M and Gazit E <i> Science </i> <strong> 2003</strong> 300:625-627</li>
-		      <li> Thai C, et al. <i> Biotech. Bioeng. </i> <strong> 2004</strong> 87:129-137</li>
-		      <li> AK Nowinski, et al.<i> J. Amer. Chem. Soc. </i> <strong> 2012</strong> 134:6000-6005</li>
-		    </ol>
+		    Freeman GM, et al. <i> Energy Policy </i> <strong> 2017</strong> 106:183-190
 		  </div>
 		</section>
 
+		<!--
 		<section hide-footer="yes" data-background-size="contain" data-background-image="img/sizes.png" data-background-color="#AAA">
 
 		</section>
-
-		<section hide-footer="yes" data-background-transition="fade" data-transition="fade" data-background-size="contain" data-background-image="img/sizes_blank.png" data-background-color="#AAA">
-		  <h4> Comparing Peptides to other Biomacromolecules </h4>
-
+		-->
+		<section hide-footer="yes" data-background-transition="fade" data-transition="fade" data-background-size="cover" data-background-image="img/grid.svg" data-background-color="#AAA" >
+		  <h3>The Problem Statement </h3>
 			<div class="text-background-dark">
 		  <dl class="small">
-		    <dt> Peptides </dt>
-		    <dd> Small monomers, huge sample space, properties arise from <span class="attn"> intermolecular</span> weak interactions</dd>
-		    <dt> Proteins </dt>
-		    <dd> Small monomers, huge sample space, properties arise from <span class="attn"> intramolecular</span> weak interactions</dd>
-		    <dt> RNA </dt>
-		    <dd> Large monomers, small sample space, properties arise from both <span class="attn"> intramolecular and intermolecular</span> strong interactions</dd>
-		    <dt> DNA </dt>
-		    <dd> Large monomers, small sample space, properties arise from <span class="attn"> intermolecular</span> strong interactions</dd>
+				<br>
+		    <dt> Assumptions of the model </dt>
+				<dd> Commute distance is constant at 7.7 miles.</dd> 
+				<dd> It takes 1 hour to commute between home and work.</dd>
+				<dd> Work day is always nine-to-five.</dd>
+				<br>
+				These assumptions make the model deterministic.
+				EV Drivers may have variable behavior and work cultures. Thus, cannot be generalized for all EV users. 
+				<br>
+				<br>
+				Let's try to modify the model to be more generalized..
+				<br>  
 			</dl>
 		</div>
-
 		</section>
-
-	      <section hide-footer="yes" data-background="img/biomaterial_plain.png">
-
-		<h4> Peptides can be coated onto surfaces</h4>
-
-
-	      </section>
-
-
-	      <section hide-footer="yes" data-transition="slide" data-background-transition="slide" data-background="img/spr_surface.png">
-
-		<h4> Peptides can tether antiobodies on surfaces</h4>
-
-	      </section>
-
-
-	      <section hide-footer="yes" data-background="img/nanoparticles.png">
-		<div class="fill-500"></div>
-		<h4 class="attn"> Peptides can be coated onto nanoparticles</h4>
-
-	  </section>
 
 	</section>
 	<section>
 
 			<section class="center" data-background-image="img/slide.svg">
-				<p class="bright">Modeling Peptides with Molecular Dynamics & Systematic Multiscale Modeling</p>
+				<p class="bright">Statistical Stochastic Models of Vehicle-to-Grid</p>
 			</section>
 
-				<section data-background-video="mov/lj_plot.mp4" data-background-size="contain" data-background="#000" hide-footer="yes">
-					<h4 class="bright"><span class="red">Molecular Dynamics</span> goes from the interaction energy of molecules...</h4>
-
-				</section>
-
-				<section hide-footer="yes" data-background-video="mov/lj_sim.mp4" data-background-size="contain" data-background="#000000">
-					<h4 class="bright">...to properties of ensembles of molecules</h4>
-
-				</section>
-
-				<section hide-footer="yes" data-background="#000000">
-					<h4 class="bright">We use <span class="red">molecular dynamics</span> to study interactions of peptides</h4>
-					<video src="mov/peptides.mp4" width="839px" height="547px" autoplay loop></video>
-					<div class="footnotes bright">
-						Enhanced Sampling with Experiment Directed Simulation of the GYG Peptide
-						DB Amirkulova, AD White.
-						(2017)
-						<i>Submitted.</i>
+				<section>
+					<h4><strong>What did we change?</strong></h4>
+					<br>
+					<dl class="small">
+							<dd> NHTS$^1$ and ACS$^2$ data were used to sample
+								<ul style="font-size:80%">
+									<li> Commute Distance to work</li>
+									<li> Commute Time to work</li>
+									<li> Hours worked per week</li>
+									<li> Working hours for the day</li>
+								</ul>
+							</dd>
+							<br>
+					</dl>
+					<div class="footnotes">
+						<ol>
+							<li>National Household Travel Survey. <i>Federal Highway Administration, U.S. DoT </i> <strong>2017</strong> URL: http://nhts.ornl.gov.</li>
+							<li>ACS Public Use Microdata Sample. <i> U.S. Census Bureau</i><strong> 2017</strong></li>
+						</ol>
 					</div>
+
 				</section>
 
 				<section>
-					<h4> Peptide Structure is Multiscale</h4>
-						<img src="img/self-assembly.png" width="450px">
+						<h4>There are <span class="red">$\sim 2500$ Electric Vehicles</span> <br>registered in New York City...</h4>
+						<!-- TODO: 2014 result goes here! -->
+						<div class="frag-container">
+								<div class="fragment fade-out multi-frag" data-fragment-index="1">
+									<div>
+							<img src="img/nyc2014.svg" width="550px"/>
+									</div>
+								</div>
+								<div class="fragment fade-in multi-frag" data-fragment-index="1">
+									<div>
+							<img src="img/nyc2014_distance.svg" width="400px"/><img src="img/nyc2014_time.svg" width="500px"/>
+									</div>
+								</div>
+								<!--<div class="fragment fade-in multi-frag" data-fragment-index="1">
+									<div>
+							
+									</div>
+								</div>-->
+							</div>
+	
 				</section>
-
-				<section>
-					<h4> <span class="red">Systematic Multiscale Modeling</span> groups atoms into beads to remove unnecessary complexity</h4>
-					<img src="img/comparison.png" width="900px">
+				
+				<section hide-footer="yes"  data-background-image="img/map.svg"  data-background-position="center" data-background-repeat= "no-repeat" data-background-size="contain" data-background="#000000">
+					<h4 style="color: black"> <strong>We did this for other cities..</strong></h4>
 				</section>
-				<section>
-					<h4> Our innovation is an automated and first-principles based approach to applying multiscale modeling</h4>
-						<img src="img/cv.svg" width="500px">
-						<div class="footnotes">
-							Developing Hierarchical Graphs Encoding Coarse-Grain Mapping Operators.
-      C Maghesree, C Xu, AD White
-      (2018)
-      <i>Submitted.</i>
+				<section hide-footer="yes">
+					<h4 style="color: black"> <strong>We did this for other cities..</strong></h4>
+					<div class="frag-container">
+							<div class="fragment fade-out multi-frag" data-fragment-index="1">
+								<div>
+									<img src="img/multicity_pricetaker.svg" width="750px">
+								</div>
+							</div>
+							<div class="fragment fade-in multi-frag" data-fragment-index="1">
+								<div>
+						<img src="img/multicity_violin.svg" width="750px"/>
+								</div>
+							</div>
 						</div>
 				</section>
-				<section>
-					<h4> For complex phenomena, like the efficacy of a drug, <span class="red">statisitcal learning</span> techniques can be used to screen or predict<h4>
-						<img src="img/motif_model_new.svg" width="425px">
 
-						<div class="footnotes">
-						Classifying Antimicrobial and Multifunctional Peptides with Bayesian Network Models.
-      			R Barrett, S Jiang, AD White .
-      			(2017)
-						<i>Submitted.</i>
+				<section hide-footer="yes">
+					<h5><strong>And for different battery sizes...</strong></h5>
+					<!-- TODO: Add plots here-->
+					<div class="frag-container">
+							<div class="fragment fade-out multi-frag" data-fragment-index="1">
+								<div>
+									<img src="img/var_bat_pricetaker.svg" width="750px">
+								</div>
+							</div>
+							<div class="fragment fade-in multi-frag" data-fragment-index="1">
+								<div>
+						<img src="img/var_bat_violin.svg" width="750px"/>
+								</div>
+							</div>
 						</div>
 				</section>
-				<section class="center">
-					These statistical learning techniques allow both modeling sophisticated structure like motifs in macromolecules and excel in working with medium dataset sizes (~50-500)
+
+				<section hide-footer="yes">
+					<h6><strong>And finally extrapolated battery capital cost into the future to see how savings from V2G are affected!</strong><br>
+						<img src="img/future_cost.svg" width="720px">
+					</h6>
+					
 				</section>
-		</section>
-	  <section>
+				</section>
+
+			<section>
 			<section class="center">
-				<h4>Grid Energy Storage...</h4>
+				<h3> <strong>Thank You!! </strong><br>
+				 Any Questions?</h3>
 			</section>
 		</section>
 
