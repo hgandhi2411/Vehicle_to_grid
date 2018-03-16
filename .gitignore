@@ -10,9 +10,6 @@ Population_data
 __pycache__
 
 # All result and unwanted files
-*.svg
-*.png
-*.jpg
 *.docx
 *.xlsm
 *.xlsx
