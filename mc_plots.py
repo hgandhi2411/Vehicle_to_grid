@@ -9,16 +9,22 @@ sns.set(style= "darkgrid", context="talk", palette='hls')
 result_path = 'C:/Users/hetag/Desktop/Vehicle_to_grid/Results/2018-03-13/multi_city/'
 states = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'New York']
 best_sp = {'Arizona': 0.06, 'California': 0.06, 'DC': 0.12, 'Illinois': 0.06, 'Massachusetts': 0.18, 'New York':0.14}
-
+cities = {'Arizona': 'Phoenix', 'California': 'SanFrancisco', 'DC': 'Washington', 'Illinois': 'Chicago', 'Massachusetts': 'Boston', 'New York':'NYC'}
 final_results = {}
+pt_results = {}
+medians, pt_medians = {}, {}
 
 for s in states:
     data = pd.read_csv(result_path + s + '/data.csv')
     Annual_savings = data['Savings{}'.format(best_sp[s])]
+    pt_savings = data['Savings0']
     # commute_cost = data['Commute_cost']
     # commute_cycles = data['Commute_cycles']
 
     final_results[s] = Annual_savings
+    medians['{}'.format(cities[s])] = np.median(Annual_savings)
+    pt_medians['{}'.format(cities[s])] = np.median(pt_savings)
+    pt_results['{}'.format(cities[s])]  = pt_savings
 
 def mad_based_outlier(points, thresh=99):
     """
@@ -58,27 +64,45 @@ def percentile_based_outlier(data, threshold=95):
     minval, maxval = np.percentile(data, [diff, 100 - diff])
     return (data < minval) | (data > maxval)
 
-final_results = pd.DataFrame.from_dict(final_results)
+final_results_df = pd.DataFrame.from_dict(final_results)
+pt_results = pd.DataFrame.from_dict(pt_results)
 
 o, k = {}, {}
 for s in states:
     outliers = percentile_based_outlier(final_results[s], threshold=96.25)
-    o['{}\n SP = {}'.format(s, best_sp[s])] = final_results[s][outliers]
+    o['{}\n SP = {}'.format(cities[s], best_sp[s])] = final_results[s][outliers]
     not_outliers = outliers == False
-    k['{}\n SP = {}'.format(s, best_sp[s])] = final_results[s][not_outliers]
-    
-sns.violinplot(data = pd.DataFrame.from_dict(k), bw = 0.5)
+    k['{}\n SP = {}'.format(cities[s], best_sp[s])] = final_results[s][not_outliers]
+
+k = pd.DataFrame.from_dict(k)
+sns.violinplot(data = k, bw = 0.5)
 plt.yticks(np.arange(-200, 150, 25))
 plt.ylabel('Savings from V2G($)')
 sns.stripplot(data = pd.DataFrame.from_dict(o), edgecolor='gray', size = 5, jitter = True, linewidth=1)
-plt.savefig(result_path + 'violin.svg')
+plt.title('Optimal Selling Price Scenario')
 
-# for s in states:
-#     outliers = mad_based_outlier(final_results[s])
-#     o[s] = final_results[s][outliers]
-#     not_outliers = outliers == False
-#     k[s] = final_results[s][not_outliers]
+yposlist = k.max().tolist()
+print(yposlist)
+xposlist = range(len(yposlist))
+print(xposlist)
+for i, s in zip(range(len(yposlist)), medians):
+    plt.text(xposlist[i], yposlist[i] + (130-yposlist[i]), 'm = {:.2f}'.format(medians[s]))
 
-# sns.violinplot(data = pd.DataFrame.from_dict(k))
-# sns.stripplot(data = pd.DataFrame.from_dict(o), color='k')
-# plt.savefig(result_path + 'violin_mad.svg')
+plt.tight_layout()
+# plt.show()
+plt.savefig(result_path + 'violin.png')
+plt.close()
+
+sns.violinplot(data = pt_results)#, bw=0.5)
+plt.ylabel('Savings from V2G($)')
+plt.title('Pricetaker Scenario')
+yposlist = pt_results.max().tolist()
+print(yposlist)
+xposlist = range(len(yposlist))
+print(xposlist)
+for i, s in zip(range(len(yposlist)), medians):
+    plt.text(xposlist[i], yposlist[i] + (180-yposlist[i]), 'm = {:.2f}'.format(pt_medians[s]))
+
+plt.tight_layout()
+plt.savefig(result_path + 'pt_violin.png')
+plt.close()

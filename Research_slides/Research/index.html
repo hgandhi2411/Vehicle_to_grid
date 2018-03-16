@@ -37,7 +37,7 @@
 	      <section class="center" data-background-size="contain" data-background-color="#153b70" data-background-image="img/slide.svg">
 					<h4 class="bright">Can Parked Cars and Carbon Taxes Create a Profit? <br/>The Economics of Vehicle-to-Grid Energy Storage<br/> for Peak Reduction</h4>
 
-					<p class="dull"><small>Heta Gandhi, Andrew White</small></p>
+					<p class="dull"><small>Heta Gandhi, Gerad Freeman, Andrew White</small></p>
 					<p class="dull">
 						<small> ACS, New Orleans<br/>
 							March 19th, 2018</small>
@@ -71,7 +71,6 @@
 					<li> Three scenarios
 						<ul style="font-size: 80%">
 							<li> Work-hour Price-taker </li>
-							<li> Arbitrage-guided</li>
 							<li> Optimal Selling Price</li>
 						</ul>
 					</li>
@@ -86,31 +85,19 @@
 		</section>
 
 
-		<section data-background="#FFF">
-				<p class="left-align"> Nomenclature 
-					<br>
-					<font size="5">
-					$c_{ch}$: Price of charging<br>
-					$c_{dgdn}$: Cost of battery degradation<br>
-					$r(t)$: Revenue earned from V2G<br>
-					$E_{s,max}$: Battery capacity(kWh)<br>
-					$c_b$: Battery capital cost (&dollar/kWh)<br>
-					$DoD$: Depth of discharge<br>
-					$L_c$: Battery lifecycles<br>
-					$E_s(t)$: Battery's remaining capacity at time t<br>
-					$LBMP(t)$: Location based maginal price at time t<br>
-					$\eta$: Round trip efficiency of the vehicle<br>
-					</font>
-				</p>
-	
-		</section>
-
 
 		<section data-background="#FFF">
 			<p> Methods </p>
 			<p class="left-align" style="font-size: 18pt">
 				Battery degradation cost$^1$ <br>$$c_{dgdn} = \frac{E_{s,max} c_b}{2\ DoD \ L_c E_{s,max}}$$<br>
+				$c_{dgdn}$: Cost of battery degradation<br>					
+				$E_{s,max}$: Battery capacity(kWh)<br>
+				$c_b$: Battery capital cost (&dollar/kWh)<br>
+				$DoD$: Depth of discharge<br>
+				$L_c$: Battery lifecycles<br>
 			</p>
+		</section>
+		<section>
 			<p class="left-align" style="font-size: 18pt">
 					Revenue from V2G <br>
 					$$r(t) = (E_s(t - 1) - E_s(t))\ \eta\ LBMP(t)$$<br>
@@ -118,7 +105,13 @@
 			<p class="left-align" style="font-size: 18pt">
 					Savings from V2G <br>
 					$$S= \sum_{working\ days} \bigg[ \Big(\sum r(t) - \sum (c_{ch}(t) + c_{dgdn}(t))\Big)_{V2G} \\ - \Big(\sum (0 - (c_{ch}(t) + c_{dgdn}(t))\Big)_{Commute} \bigg]$$
+					$c_{ch}$: Price of charging<br>
+					$r(t)$: Revenue earned from V2G<br>
+					$E_s(t)$: Battery's remaining capacity at time t<br>
+					$LBMP(t)$: Location based maginal price at time t<br>
+					$\eta$: Round trip efficiency of the vehicle<br>
 			</p>
+			<br>
 			<div class="footnotes">
 				<ol class="">
 					<li>Kempton, et al. <i> J. Power Sources </i> <strong> 2005</strong> 144:268-294</li>
@@ -150,11 +143,12 @@
 				<dd> It takes 1 hour to commute between home and work.</dd>
 				<dd> Work day is always nine-to-five.</dd>
 				<br>
-				These assumptions make the model deterministic.
-				EV Drivers may have variable behavior and work cultures. Thus, cannot be generalized for all EV users. 
+			<dt> Problems </dt>
+				<dd> The model is deterministic.</dd>
+				<dd> Doesn't use <strong>Real data</strong> and <strong>Statistics</strong></dd>
+				<dd> EV Drivers may have variable behavior and work cultures.</dd> 
 				<br>
-				<br>
-				Let's try to modify the model to be more generalized..
+				Let's try to modify the model to be more <strong>Realistic</strong>...
 				<br>  
 			</dl>
 		</div>
@@ -192,7 +186,6 @@
 
 				<section>
 						<h4>There are <span class="red">$\sim 2500$ Electric Vehicles</span> <br>registered in New York City...</h4>
-						<!-- TODO: 2014 result goes here! -->
 						<div class="frag-container">
 								<div class="fragment fade-out multi-frag" data-fragment-index="1">
 									<div>
@@ -201,16 +194,14 @@
 								</div>
 								<div class="fragment fade-in multi-frag" data-fragment-index="1">
 									<div>
-							<img src="img/nyc2014_distance.svg" width="400px"/><img src="img/nyc2014_time.svg" width="500px"/>
+							<img src="img/nyc2014_distance.svg" width="500px"/>
 									</div>
 								</div>
-								<!--<div class="fragment fade-in multi-frag" data-fragment-index="1">
-									<div>
-							
-									</div>
-								</div>-->
-							</div>
-	
+								</div>
+					</section>
+					<section>
+						<h4>There are <span class="red">$\sim 2500$ Electric Vehicles</span> <br>registered in New York City...</h4>
+					<img src="img/nyc2014_time.svg" width="550px"/>	
 				</section>
 				
 				<section hide-footer="yes"  data-background-image="img/map.svg"  data-background-position="center" data-background-repeat= "no-repeat" data-background-size="contain" data-background="#000000">
@@ -221,12 +212,12 @@
 					<div class="frag-container">
 							<div class="fragment fade-out multi-frag" data-fragment-index="1">
 								<div>
-									<img src="img/multicity_pricetaker.svg" width="750px">
+						<img src="img/multicity_pricetaker.png" width="750px">
 								</div>
 							</div>
 							<div class="fragment fade-in multi-frag" data-fragment-index="1">
 								<div>
-						<img src="img/multicity_violin.svg" width="750px"/>
+						<img src="img/multicity_violin.png" width="750px"/>
 								</div>
 							</div>
 						</div>
@@ -251,7 +242,7 @@
 
 				<section hide-footer="yes">
 					<h6><strong>And finally extrapolated battery capital cost into the future to see how savings from V2G are affected!</strong><br>
-						<img src="img/future_cost.svg" width="720px">
+						<img src="img/future_cost.png" width="720px">
 					</h6>
 					
 				</section>

@@ -3,9 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import seaborn as sns
+import collections
 
 plt.rcParams['figure.figsize'] = (10.0, 8.0)
 sns.set(style= "darkgrid", context="talk", palette='hls')
+result_path = 'C:/Users/hetag/Desktop/Vehicle_to_grid/Results/2018-03-13/bat_ex/'
 
 sample = 2559.
 year = np.arange(2010, 2051, 1)
@@ -26,15 +28,24 @@ future_costs[6:] = pd.stats.moments.rolling_mean(future_costs[6:], window = 5, m
 cost_dict = {a:b for a,b in zip(year, future_costs)}
 # print(cost_dict)
 
+plt.plot(year, future_costs, 'o-')
+plt.title('Forecast of battery capital cost over time')
+plt.xlabel('Year')
+# plt.xticks(rotation=30)
+plt.ylabel('Battery Capital Cost ($/kWh)')
+plt.savefig(result_path + 'battery_cost.png')
+plt.close()
+
 battery = 60
 eff = 0.62
 DoD = 0.9
 lifecycles = 5300		#for lithium ion battery from Gerad's article
 energy_throughput = 2*lifecycles*battery*DoD 		#Ln.Es.DoD (kWh)
-result_path = 'C:/Users/hetag/Desktop/Vehicle_to_grid/Results/2018-03-13/bat_ex/'
 states = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'New York']
 best_sp = {'Arizona': 0.06, 'California': 0.06, 'DC': 0.12, 'Illinois': 0.06, 'Massachusetts': 0.18, 'New York':0.14}
 
+cities = {'Arizona': 'Phoenix', 'California': 'SanFrancisco', 'DC': 'Washington', 'Illinois': 'Chicago', 'Massachusetts': 'Boston', 'New York':'NYC'}
+cities_reversed = {a:b for b,a in zip(cities.keys(), cities.values())}
 final_results = {}
 final_no_outliers = {}
 final_outliers = {}
@@ -66,25 +77,20 @@ for s in states:
         # no_outliers = outliers == False
         # final_no_outliers[s][key] = annual_savings
 
-    # # print(final_results)
-    # df = pd.DataFrame.from_dict(final_no_outliers[s])
-    # sns.boxplot(data=df )
-    # df2 = pd.DataFrame.from_dict(final_outliers[s])
-    # sns.stripplot(data = df2)
-    #plt.legend()
-    # plt.xticks(rotation = 45)
-    # plt.show()
 
-for key in final_results:
-    x = list(final_results[key].keys())
-    y = [np.mean(a) for a in final_results[key].values()]
-    yerr = np.sqrt(np.array([np.var(a, ddof = 1) for a in final_results[key].values()]) / sample)
+for key in sorted(cities_reversed):
+    value = cities_reversed[key]
+    x = list(final_results[value].keys())
+    y = [np.mean(a) for a in final_results[value].values()]
+    yerr = np.sqrt(np.array([np.var(a, ddof = 1) for a in final_results[value].values()]) / sample)
     # plt.plot(x, y, '.', label = '{}'.format(key))
     plt.errorbar(x, y, yerr = yerr, fmt = '.', markeredgewidth=2, label = '{}'.format(key))
+
 
 plt.xticks(rotation = 30)
 plt.ylabel('Savings from V2G($)')
 plt.xlabel('Year') 
 plt.legend()
-plt.savefig(result_path + 'future_cost.svg')#.format(s))
+plt.tight_layout()
+plt.savefig(result_path + 'future_cost.png')#.format(s))
 plt.close()

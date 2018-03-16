@@ -167,7 +167,7 @@ dist = np.genfromtxt(prefix + 'PERV2PUB.CSV', delimiter = ',', dtype = None, use
 time = np.genfromtxt(prefix + 'PERV2PUB.CSV', delimiter = ',', dtype = None, skip_header=1, usecols = (84), filling_values = 0)    #commute time
 #work_time = np.genfromtxt('PERV2PUB.csv', delimiter = ',', dtype = None, usecols = (98), skip_header = 1, filling_values = 0)
 state = np.genfromtxt(prefix + 'PERV2PUB.CSV', delimiter = ',', dtype = None, usecols = (48), skip_header= 1, filling_values = 0)		#state in column 49 of PERV2PUB.csv
-state_list = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'New York']
+state_list = ['New York']#['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'New York']
 mask = {'Arizona': 'AZ', 'California': 'CA', 'DC': 'DC', 'Illinois': 'IL', 'Massachusetts': 'MA', 'New York': 'NY', 'Texas': 'TX'}
 
 max_savings = {}
@@ -238,8 +238,9 @@ for s in state_list:
 	plt.clf()
 
 	#LBMP Data
-	data = pd.read_csv(prefix + lbmp_file)
-	dates = pd.to_datetime(data.Time_Stamp)
+	data = pd.read_csv(prefix + lbmp_file, delimiter = ',')
+	print(type(data))
+	dates = pd.to_datetime(data['Time_Stamp'])
 	price = np.asarray(data.LBMP)/1000		#LBMP in kWh
 
 	time_arrival_work = roundupTime(time_arrival_work)
