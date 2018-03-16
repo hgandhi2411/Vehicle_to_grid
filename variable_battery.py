@@ -10,6 +10,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from pandas.tseries.holiday import USFederalHolidayCalendar
 import scipy.stats as ss
 
+plt.rcParams['figure.figsize'] = (10.0, 8.0)
+sns.set(style= "darkgrid", context="talk", palette='hls')
 # Required numbers
 Sample = 2559    #total EVs in NYC 2015
 prefix = 'C:/Users/hetag/Desktop/Vehicle_to_grid/'
@@ -330,8 +332,6 @@ for s in state_list:
 	colors = ['#ffff00','#40E0D0','#ff0000', '#191970']
 	alpha = [1, 0.7, 0.5, 0.3]
 
-	sns.set(context = 'talk', style = 'darkgrid', font= 'Times New Roman', palette= 'hls')
-	mlib.rcParams['figure.figsize'] = (10, 8)
 	cdgdn_commute = np.mean(final_commute_cdgdn)
 	cch_commute = np.mean(final_commute_cost - final_commute_cdgdn)
 	Annual_savings = np.zeros((x,Sample))

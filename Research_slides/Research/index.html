@@ -85,14 +85,13 @@
 		</section>
 
 
-
 		<section data-background="#FFF">
 			<p> Methods </p>
 			<p class="left-align" style="font-size: 18pt">
 				Battery degradation cost$^1$ <br>$$c_{dgdn} = \frac{E_{s,max} c_b}{2\ DoD \ L_c E_{s,max}}$$<br>
 				$c_{dgdn}$: Cost of battery degradation<br>					
 				$E_{s,max}$: Battery capacity(kWh)<br>
-				$c_b$: Battery capital cost (&dollar/kWh)<br>
+				$c_b$: Battery capital cost (<span>&#36;</span> /kWh)<br>
 				$DoD$: Depth of discharge<br>
 				$L_c$: Battery lifecycles<br>
 			</p>
@@ -120,9 +119,20 @@
 		</section>
 
 		<section>
-		  <p> Results</p>
-
-			<img src="img/Gerad_results.svg" width="550px">
+		<p> Results</p>
+		<br>
+		<div class="frag-container">
+			<div class="fragment fade-out multi-frag" data-fragment-index="1">
+				<div>
+					<img src="img/Gerad_result_1.png" width="600px">
+				</div>
+			</div>
+			<div class="fragment fade-in multi-frag" data-fragment-index="1">
+				<div>
+					<img src="img/Gerad_result_2.png" width="600px">
+				</div>
+			</div>
+		</div><br><br><br><br><br><br><br><br>
 		  <div class="footnotes">
 		    Freeman GM, et al. <i> Energy Policy </i> <strong> 2017</strong> 106:183-190
 		  </div>
@@ -138,15 +148,21 @@
 			<div class="text-background-dark">
 		  <dl class="small">
 				<br>
-		    <dt> Assumptions of the model </dt>
-				<dd> Commute distance is constant at 7.7 miles.</dd> 
-				<dd> It takes 1 hour to commute between home and work.</dd>
-				<dd> Work day is always nine-to-five.</dd>
+			<dt> Assumptions of the model </dt>
+			<ul>
+				<li> Commute distance is constant at 7.7 miles.</li> 
+				<li> It takes 1 hour to commute between home and work.</li>
+				<li> Work day is always nine-to-five.</li>
+			</ul>
+				<br>
 				<br>
 			<dt> Problems </dt>
-				<dd> The model is deterministic.</dd>
-				<dd> Doesn't use <strong>Real data</strong> and <strong>Statistics</strong></dd>
-				<dd> EV Drivers may have variable behavior and work cultures.</dd> 
+			<ul>
+				<li> The model is deterministic.</li>
+				<li> It doesn't use <strong>Real data</strong> and <strong>Statistics</strong></li>
+				<li> EV Drivers may have variable behavior and work cultures.</li> 
+			</ul>
+				<br>
 				<br>
 				Let's try to modify the model to be more <strong>Realistic</strong>...
 				<br>  
@@ -212,12 +228,12 @@
 					<div class="frag-container">
 							<div class="fragment fade-out multi-frag" data-fragment-index="1">
 								<div>
-						<img src="img/multicity_pricetaker.png" width="750px">
+						<img src="img/multicity_pricetaker.png" width="700px">
 								</div>
 							</div>
 							<div class="fragment fade-in multi-frag" data-fragment-index="1">
 								<div>
-						<img src="img/multicity_violin.png" width="750px"/>
+						<img src="img/multicity_violin.png" width="700px"/>
 								</div>
 							</div>
 						</div>
@@ -229,20 +245,26 @@
 					<div class="frag-container">
 							<div class="fragment fade-out multi-frag" data-fragment-index="1">
 								<div>
-									<img src="img/var_bat_pricetaker.svg" width="750px">
+									<img src="img/var_bat_pricetaker.svg" width="700px">
 								</div>
 							</div>
 							<div class="fragment fade-in multi-frag" data-fragment-index="1">
 								<div>
-						<img src="img/var_bat_violin.svg" width="750px"/>
+						<img src="img/var_bat_violin.svg" width="700px"/>
 								</div>
 							</div>
 						</div>
 				</section>
 
 				<section hide-footer="yes">
+					<h6><strong>The cost of Lithium Ion Battery has been falling rapidly</strong><br>
+						<img src="img/battery_cost.png" width="700px">
+					</h6>
+					
+				</section>
+				<section hide-footer="yes">
 					<h6><strong>And finally extrapolated battery capital cost into the future to see how savings from V2G are affected!</strong><br>
-						<img src="img/future_cost.png" width="720px">
+						<img src="img/future_cost.png" width="700px">
 					</h6>
 					
 				</section>

@@ -42,7 +42,7 @@ DoD = 0.9
 lifecycles = 5300		#for lithium ion battery from Gerad's article
 energy_throughput = 2*lifecycles*battery*DoD 		#Ln.Es.DoD (kWh)
 states = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'New York']
-best_sp = {'Arizona': 0.06, 'California': 0.06, 'DC': 0.12, 'Illinois': 0.06, 'Massachusetts': 0.18, 'New York':0.14}
+best_sp = {'Arizona': 0.06, 'California': 0.05, 'DC': 0.12, 'Illinois': 0.06, 'Massachusetts': 0.18, 'New York':0.14}
 
 cities = {'Arizona': 'Phoenix', 'California': 'SanFrancisco', 'DC': 'Washington', 'Illinois': 'Chicago', 'Massachusetts': 'Boston', 'New York':'NYC'}
 cities_reversed = {a:b for b,a in zip(cities.keys(), cities.values())}
@@ -81,7 +81,7 @@ for s in states:
 for key in sorted(cities_reversed):
     value = cities_reversed[key]
     x = list(final_results[value].keys())
-    y = [np.mean(a) for a in final_results[value].values()]
+    y = [np.median(a) for a in final_results[value].values()]
     yerr = np.sqrt(np.array([np.var(a, ddof = 1) for a in final_results[value].values()]) / sample)
     # plt.plot(x, y, '.', label = '{}'.format(key))
     plt.errorbar(x, y, yerr = yerr, fmt = '.', markeredgewidth=2, label = '{}'.format(key))

@@ -239,7 +239,6 @@ for s in state_list:
 
 	#LBMP Data
 	data = pd.read_csv(prefix + lbmp_file, delimiter = ',')
-	print(type(data))
 	dates = pd.to_datetime(data['Time_Stamp'])
 	price = np.asarray(data.LBMP)/1000		#LBMP in kWh
 

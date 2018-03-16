@@ -8,7 +8,7 @@ plt.rcParams['figure.figsize'] = (10.0, 8.0)
 sns.set(style= "darkgrid", context="talk", palette='hls')
 result_path = 'C:/Users/hetag/Desktop/Vehicle_to_grid/Results/2018-03-13/multi_city/'
 states = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'New York']
-best_sp = {'Arizona': 0.06, 'California': 0.06, 'DC': 0.12, 'Illinois': 0.06, 'Massachusetts': 0.18, 'New York':0.14}
+best_sp = {'Arizona': 0.06, 'California': 0.05, 'DC': 0.12, 'Illinois': 0.06, 'Massachusetts': 0.18, 'New York':0.14}
 cities = {'Arizona': 'Phoenix', 'California': 'SanFrancisco', 'DC': 'Washington', 'Illinois': 'Chicago', 'Massachusetts': 'Boston', 'New York':'NYC'}
 final_results = {}
 pt_results = {}
@@ -86,7 +86,7 @@ print(yposlist)
 xposlist = range(len(yposlist))
 print(xposlist)
 for i, s in zip(range(len(yposlist)), medians):
-    plt.text(xposlist[i], yposlist[i] + (130-yposlist[i]), 'm = {:.2f}'.format(medians[s]))
+    plt.text(xposlist[i], yposlist[i] + (130-yposlist[i]), 'm = ${:.2f}'.format(medians[s]), horizontalalignment='center')
 
 plt.tight_layout()
 # plt.show()
@@ -101,7 +101,7 @@ print(yposlist)
 xposlist = range(len(yposlist))
 print(xposlist)
 for i, s in zip(range(len(yposlist)), medians):
-    plt.text(xposlist[i], yposlist[i] + (180-yposlist[i]), 'm = {:.2f}'.format(pt_medians[s]))
+    plt.text(xposlist[i], yposlist[i] + (170-yposlist[i]), 'm = ${:.2f}'.format(pt_medians[s]), horizontalalignment='center')
 
 plt.tight_layout()
 plt.savefig(result_path + 'pt_violin.png')
