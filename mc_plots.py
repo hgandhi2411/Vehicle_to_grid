@@ -102,7 +102,6 @@ xposlist = range(len(yposlist))
 print(xposlist)
 for i, s in zip(range(len(yposlist)), medians):
     plt.text(xposlist[i], yposlist[i] + (170-yposlist[i]), 'm = ${:.2f}'.format(pt_medians[s]), horizontalalignment='center')
-
 plt.tight_layout()
 plt.savefig(result_path + 'pt_violin.png')
 plt.close()
