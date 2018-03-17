@@ -34,7 +34,7 @@
 		<p class="pull-right footer-text"><span class="footer-link"><a href="http://thewhitelab.org"> http://thewhitelab.org</a></span></p>
 	      </div>
 
-	      <section class="center" data-background-size="contain" data-background-color="#153b70" data-background-image="img/slide.svg">
+	      <section class="center" data-background-size="contain" data-background-color="#003b71" data-background-image="img/slide.svg">
 					<h4 class="bright">Can Parked Cars and Carbon Taxes Create a Profit? <br/>The Economics of Vehicle-to-Grid Energy Storage<br/> for Peak Reduction</h4>
 
 					<p class="dull"><small>Heta Gandhi, Gerad Freeman, Andrew White</small></p>
@@ -46,24 +46,79 @@
 
 	      <section>
 
+					<section>
+							<h3> The Price of Electricity is Variable</h3>
+							<img src="img/lbmp-day.png" width="500px">
+							<p class="small">
+								caused by mismatch between power consumption and generation
+							</p>
+							<div class="footnotes">
+								NYC LBMP in from March 1 2018 to March 7 2018
+							</div>
+					</section>
+					<section>
+							<p>A smooth version shows the structure of prices</p>
+							<img src="img/lbmp-day-smooth.png" width="500px">
+							<div class="footnotes">
+									NYC LBMP in from March 1 2018 to March 7 2018
+							</div>
+					</section>
+					<section class="center">
+							<h4> Renewables Contribute to These Fluctuations</h4>
+							<img src="img/generation.png" >
+							<div class="footnotes">
+									<i>DOE NREL 2016 Renewable Energy Data Book</i>
+							</div>
+					</section>
+					<section>
+							<h4> Renewables Are Rapidly Increasing</h4>
+							<img src="img/renewable_growth.png" height="450px" >
+							<div class="footnotes">
+									<i>DOE NREL 2016 Renewable Energy Data Book</i>
+							</div>
+					</section>
+					<section class="center">
+							<h4> Grid Level Energy Storage Can Solve This</h4>
+
+							<p class="fragment red"> Grid level energy storage is expensive</p>
+
+							<p class="fragment">Solution: Electric vehicle to grid Uses electric vehicle battery capacity as grid level energy storage </p>
+					</section>
+
+					<section hide-footer="yes">
+						<h4>Electric Vehicle To Grid</h4>
+						<video src="mov/ev_demo.mp4" autoplay loop></video>
+					</section>
+
+					<section class="">
+							<h3> Research Questions </h3>
+							<div class="fill-100"></div>
+							<ul>
+								<li>Does it impact at grid-scale?</li>
+								<li>Is it economical for an EV driver?</li>
+								<li>Is it economical for a utility?</li>
+								<li>Are there negative effects of coupling commute times to grid generation?</li>
+							</ul>
+					</section>
+				</section>
+<!--
 					<section class="">
 						<p> Concept of <span class="attn"> Vehicle-to-Grid (V2G)</span> </p>
 						<p class="center-align" style="line-height: 0.3">
 							<img src="img/v2g.gif" width="500px"/> <br>
 						<font size="3" >Source: Nissan Europe Youtube Channel</font></p>
-						<!-- Find a way to make the following text appear when I click -->
 						<p class="fragment left-align"data-fragment-index="1"> <font size="5"> Infrastructure needed for V2G technology:
 							<ol style="font-size: 60%">
 								<li class="fragment" data-fragment-index="1"> Bi-directional metering system</li>
 								<li class="fragment" data-fragment-index="1"> Robust control systems in Electric Vehicles(EV) to monitor the battery capacity left </li>
-							</ol> </font> </p>	
+							</ol> </font> </p>
 					</section>
 				</section>
-
+-->
 	<section>
 
 		<section >
-			<p class="left-align"> The Model <br> 
+			<p class="left-align"> Our Previous Work <br>
 				<ol style="font-size: 70%">
 					<li> Economics of V2G in New York City</li>
 					<li> Use of location based marginal pricing (LBMP)</li>
@@ -75,12 +130,12 @@
 						</ul>
 					</li>
 				</ol></p>
-				<img src="img/models_white_wall_2x.jpg" width="450px"/>	
-				
+				<img src="img/models_white_wall_2x.jpg" width="450px"/>
+
 				<div class="footnotes">
 						Freeman GM, et al. <i> Energy Policy </i> <strong> 2017</strong> 106:183-190
 				</div>
-				
+
 
 		</section>
 
@@ -89,12 +144,18 @@
 			<p> Methods </p>
 			<p class="left-align" style="font-size: 18pt">
 				Battery degradation cost$^1$ <br>$$c_{dgdn} = \frac{E_{s,max} c_b}{2\ DoD \ L_c E_{s,max}}$$<br>
-				$c_{dgdn}$: Cost of battery degradation<br>					
+				$c_{dgdn}$: Cost of battery degradation<br>
 				$E_{s,max}$: Battery capacity(kWh)<br>
 				$c_b$: Battery capital cost (<span>&#36;</span> /kWh)<br>
 				$DoD$: Depth of discharge<br>
 				$L_c$: Battery lifecycles<br>
 			</p>
+			<div class="fill-100"></div>
+			<div class="footnotes">
+					<ol class="">
+						<li>Kempton, et al. <i> J. Power Sources </i> <strong> 2005</strong> 144:268-294</li>
+					</ol>
+				</div>
 		</section>
 		<section>
 			<p class="left-align" style="font-size: 18pt">
@@ -111,11 +172,6 @@
 					$\eta$: Round trip efficiency of the vehicle<br>
 			</p>
 			<br>
-			<div class="footnotes">
-				<ol class="">
-					<li>Kempton, et al. <i> J. Power Sources </i> <strong> 2005</strong> 144:268-294</li>
-				</ol>
-		  </div>
 		</section>
 
 		<section>
@@ -150,7 +206,7 @@
 				<br>
 			<dt> Assumptions of the model </dt>
 			<ul>
-				<li> Commute distance is constant at 7.7 miles.</li> 
+				<li> Commute distance is constant at 7.7 miles.</li>
 				<li> It takes 1 hour to commute between home and work.</li>
 				<li> Work day is always nine-to-five.</li>
 			</ul>
@@ -160,12 +216,12 @@
 			<ul>
 				<li> The model is deterministic.</li>
 				<li> It doesn't use <strong>Real data</strong> and <strong>Statistics</strong></li>
-				<li> EV Drivers may have variable behavior and work cultures.</li> 
+				<li> EV Drivers may have variable behavior and work cultures.</li>
 			</ul>
 				<br>
 				<br>
 				Let's try to modify the model to be more <strong>Realistic</strong>...
-				<br>  
+				<br>
 			</dl>
 		</div>
 		</section>
@@ -217,14 +273,15 @@
 					</section>
 					<section>
 						<h4>There are <span class="red">$\sim 2500$ Electric Vehicles</span> <br>registered in New York City...</h4>
-					<img src="img/nyc2014_time.svg" width="550px"/>	
+					<img src="img/nyc2014_time.svg" width="550px"/>
 				</section>
-				
+
 				<section hide-footer="yes"  data-background-image="img/map.svg"  data-background-position="center" data-background-repeat= "no-repeat" data-background-size="contain" data-background="#000000">
-					<h4 style="color: black"> <strong>We did this for other cities..</strong></h4>
+					<div class="text-background-dark">
+							<h2 class="attn"> What about other cities?</h2>
+					</div>
 				</section>
 				<section hide-footer="yes">
-					<h4 style="color: black"> <strong>We did this for other cities..</strong></h4>
 					<div class="frag-container">
 							<div class="fragment fade-out multi-frag" data-fragment-index="1">
 								<div>
@@ -237,6 +294,10 @@
 								</div>
 							</div>
 						</div>
+				</section>
+				<section>
+					<h4>Explaining the Difference between NYC & SFC</h4>
+					<img src="img/NYC-CA-Day-Median.png">
 				</section>
 
 				<section hide-footer="yes">
@@ -260,13 +321,13 @@
 					<h6><strong>The cost of Lithium Ion Battery has been falling rapidly</strong><br>
 						<img src="img/battery_cost.png" width="700px">
 					</h6>
-					
+
 				</section>
 				<section hide-footer="yes">
 					<h6><strong>And finally extrapolated battery capital cost into the future to see how savings from V2G are affected!</strong><br>
 						<img src="img/future_cost_varying_osp.png" width="700px">
 					</h6>
-					
+
 				</section>
 				</section>
 
