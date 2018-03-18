@@ -303,15 +303,6 @@ for i in range(x):
 
 np.set_printoptions(precision = 2, threshold = np.inf)
 #Writing values to a file
-output = open('data.txt', 'w')
-output.write('efficiency = {} \nSP \t\tSavings mean\t\tCI95 \t\t\t Mean cycles\n'.format(eff))
-for i in range(x):
-    output.write('{} \t\t{} \t\t{} \t\t{}\n'.format(SP[i], mean[i], y[i], np.mean(battery_cycles[i])))
-output.write('cdgdn = {} \ncch = {} \nrt = {} \ncdgdn_commute = {} \ncch_commute = {} \n'.format(cdgdn, cch, rt, cdgdn_commute, cch_commute))
-output.write('\n')
-#output.write('\ndistance = {}, mean = {:.2f} \ntime = {}, mean = {:.2f} \nwork hours = {}, mean = {:.2f} \n'.format(commute_dist, np.mean(commute_dist), commute_time, np.mean(commute_time), daily_work_mins/60.0, np.mean(daily_work_mins/60.0)))
-output.close()
-
 #Writing values to a file
 output = result_path + 'data.csv'
 results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home}
@@ -319,6 +310,15 @@ results.update({'Savings{}'.format(a):b for a,b in zip(SP, Annual_savings)})
 results.update({'Cycle{}'.format(a):b for a,b in zip(SP, battery_cycles)})
 results = pd.DataFrame.from_dict(results)
 results.to_csv(output)
+
+output = open(result_path + 'data.txt', 'w')
+output.write('efficiency = {} \nSP \t\tSavings mean\t\tCI95 \t\t\t Mean cycles\n'.format(eff))
+for i in range(x):
+    output.write('{} \t\t{} \t\t{} \t\t{}\n'.format(SP[i], mean[i], y[i], np.mean(battery_cycles[i])))
+output.write('cdgdn = {} \ncch = {} \nrt = {} \ncdgdn_commute = {} \ncch_commute = {} \n'.format(cdgdn, cch, rt, cdgdn_commute, cch_commute))
+output.write('\n')
+#output.write('\ndistance = {}, mean = {:.2f} \ntime = {}, mean = {:.2f} \nwork hours = {}, mean = {:.2f} \n'.format(commute_dist, np.mean(commute_dist), commute_time, np.mean(commute_time), daily_work_mins/60.0, np.mean(daily_work_mins/60.0)))
+output.close()
 
 #creating filenames for storing results
 files, files1, files2 = [], [], []
