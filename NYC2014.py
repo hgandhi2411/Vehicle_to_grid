@@ -7,6 +7,7 @@ import datetime as dt
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
 from pandas.tseries.holiday import USFederalHolidayCalendar
+import scipy.stats as ss
 import os
 
 prefix = 'C:/Users/hetag/Desktop/Vehicle_to_grid/'
@@ -288,21 +289,13 @@ mlib.rcParams['figure.figsize'] = (10, 8)
 cdgdn_commute = np.mean(final_commute_cdgdn)
 cch_commute = np.mean(final_commute_cost - final_commute_cdgdn)
 Annual_savings = np.zeros((x,Sample))
-mean, cdgdn, cch, rt, y = [], [], [], [], []
-ci = 0.95
-z = ss.norm.ppf((1+ci)/2)
+
 
 for i in range(x):
 	Annual_savings[i] = final_discharge_cost[i] - final_charge_cost[i] - (0.0 - final_commute_cost)
-	#Calculating statistics and CIs
-	mean.append(np.mean(Annual_savings[i]))
-	y.append(np.percentile(Annual_savings[i], [2.5, 97.5]))
-	cdgdn.append(np.mean(final_cdgdn[i]))
-	cch.append(np.mean(final_charge_cost[i] - final_cdgdn[i]))
-	rt.append(np.mean(final_discharge_cost[i])) #revenue from V2G
 
 np.set_printoptions(precision = 2, threshold = np.inf)
-#Writing values to a file
+
 #Writing values to a file
 output = result_path + 'data.csv'
 results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home}
@@ -310,6 +303,18 @@ results.update({'Savings{}'.format(a):b for a,b in zip(SP, Annual_savings)})
 results.update({'Cycle{}'.format(a):b for a,b in zip(SP, battery_cycles)})
 results = pd.DataFrame.from_dict(results)
 results.to_csv(output)
+
+#Writing values to a file
+mean, cdgdn, cch, rt, y = [], [], [], [], []
+ci = 0.95
+z = ss.norm.ppf((1+ci)/2)
+for i in range(x):
+	#Calculating statistics and CIs
+	mean.append(np.mean(Annual_savings[i]))
+	y.append(np.percentile(Annual_savings[i], [2.5, 97.5]))
+	cdgdn.append(np.mean(final_cdgdn[i]))
+	cch.append(np.mean(final_charge_cost[i] - final_cdgdn[i]))
+	rt.append(np.mean(final_discharge_cost[i])) #revenue from V2G
 
 output = open(result_path + 'data.txt', 'w')
 output.write('efficiency = {} \nSP \t\tSavings mean\t\tCI95 \t\t\t Mean cycles\n'.format(eff))
@@ -381,7 +386,7 @@ for i in range(x):
 	cax = fig.add_subplot(grid[1,2])
 
 	# scatter points on the main axes
-	a = main_ax.hexbin(commute_time, time_depart, C = Annual_savings[i] , cmap = cmap, gridsize = 15, vmin = low, vmax = high, ec = 'none')
+	a = main_ax.hexbin(commute_time, time_depart, C = Annual_savings[i] , cmap = cmap, gridsize = 15, vmin = low, vmax = high, edgecolor = 'none')
 	main_ax.set_xlabel('')
 
 	# histogram on the attached axes

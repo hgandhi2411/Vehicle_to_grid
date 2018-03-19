@@ -41,7 +41,10 @@
 					<p class="dull">
 						<small> ACS, New Orleans<br/>
 							March 19th, 2018</small>
-					</p>
+						</p>
+			<aside class="notes">
+				Remember to say you're name!
+			</aside>
 	      </section>
 
 	      <section>
@@ -58,6 +61,11 @@
 							<div class="footnotes">
 									<i>DOE NREL 2016 Renewable Energy Data Book</i>
 							</div>
+							<aside class="notes">
+								Increasing energy demand
+								Going green
+								All states have their renewable portfolio
+							</aside>
 					</section>
 					<section>
 							<h4> Renewables Have Been Rapidly Increasing..</h4>
@@ -65,6 +73,9 @@
 							<div class="footnotes">
 									<i>DOE NREL 2016 Renewable Energy Data Book</i>
 							</div>
+							<aside class="notes">
+								Renewables increasing!
+							</aside>
 					</section>
 					<section>
 							<h4> Renewables Induce Variations in the Price of Electricity <!--Mismatch Between Power Consumption and Generation Causes-->
@@ -75,6 +86,11 @@
 							<div class="footnotes">
 								NYC LBMP from March 1 2018 to March 7 2018
 							</div>
+							<aside class="notes">
+								Intermittent nature of renewables causes mismatch of demand and supply
+								sometimes sky rocket and sometimes dip. 
+								even negative sometimes.
+							</aside>
 					</section>
 					<section>
 							<h4>A smooth version shows the structure of prices</h4>
@@ -82,6 +98,9 @@
 							<div class="footnotes">
 								NYC LBMP from March 1 2018 to March 7 2018
 							</div>
+							<aside class="notes">
+								some days price is higher while on other days it is not as high
+							</aside>
 					</section>
 					
 				
@@ -96,10 +115,18 @@
 					<section hide-footer="yes">
 						<h4>Electric Vehicle To Grid</h4>
 						<video src="mov/ev_demo.mp4" autoplay loop></video>
+						<aside class="notes">
+							Animation 
+							charge at night
+							go to work 
+							plug in and sell
+							come back home
+							and repeat
+						</aside>
 					</section>
 
 					<section class="">
-							<h3> Research Questions </h3>
+							<h3> Open Questions </h3>
 							<div class="fill-100"></div>
 							<ul>
 								<li>Does it impact at grid-scale?</li>
@@ -143,7 +170,11 @@
 				<div class="footnotes">
 						Freeman GM, et al. <i> Energy Policy </i> <strong> 2017</strong> 106:183-190
 				</div>
+				<aside class="notes">
+					Two versions of the model
 
+					Make clear the diff between Pricetaker(sells all days) and Optimal selling price
+				</aside>
 
 		</section>
 
@@ -164,6 +195,11 @@
 						<li>Kempton, et al. <i> J. Power Sources </i> <strong> 2005</strong> 144:268-294</li>
 					</ol>
 				</div>
+				<aside class="notes">
+					Bat deg a function of battery capital cost and the energy throughput
+					Energy throughput function of battery lifecycles, dod and battery capacity
+					Model assumes Tesla Model S because it has enough battery capacity to participate in V2G
+				</aside>
 		</section>
 		<section>
 			<p class="left-align" style="font-size: 18pt">
@@ -180,6 +216,10 @@
 					$\eta$: Round trip efficiency of the vehicle<br>
 			</p>
 			<br>
+			<aside class="notes">
+				Revenue -> function of TOU, battery capacity sold during that time interval and round trip eff of the battery.
+
+			</aside>
 		</section>
 
 		<section>
@@ -196,9 +236,15 @@
 				</div>
 			</div>
 		</div><br><br><br><br><br><br><br><br><br>
-		  <div class="footnotes">
-		    Freeman GM, et al. <i> Energy Policy </i> <strong> 2017</strong> 106:183-190
-		  </div>
+		<div class="footnotes">
+			Freeman GM, et al. <i> Energy Policy </i> <strong> 2017</strong> 106:183-190
+		</div>
+		<aside class="notes">
+			no savings for only commute
+			pricetaker -ve savings - cycling all the time
+			osp +ve savings
+
+		</aside>
 		</section>
 
 		<section>
@@ -206,6 +252,7 @@
 			<ul class="small">
 				<li> A similar study in Spain concludes that V2G is not profitable if power is sold continuously at time-of-use prices and battery capital price will have to reduce significantly before V2G is profitable. $^1$</li>
 				<li> Results from a study in UK shows that V2G with additional income from the capacity market results in good profits, producing a net present value of £8400 over 10 years for an EV that sells electricity three times every week and includes cost of infrastructure installment.$^2$</li>
+				<li> And many more</li>
 			</ul>
 			<br><br>
 			<div class="footnotes">
@@ -263,7 +310,7 @@
 									<li> Commute Distance to work</li>
 									<li> Commute Time to work</li>
 									<li> Hours worked per week</li>
-									<li> Working hours for the day</li>
+									<li> Time of work</li>
 								</ul>
 							</dd>
 							<br>
@@ -276,9 +323,16 @@
 					</div>
 
 				</section>
-
+				<section class="center">
+					<h4> Methods</h4>
+					<ul style="font-size:80%">
+						<li>Base years are 2014 and 2017</li>
+						<li>Tesla Model S</li>
+						<li>Sample size of $\sim$ 2500</li>
+					</ul>
+				</section>
 				<section>
-						<h4>There are <span class="red">$\sim 2500$ Electric Vehicles</span> <br>registered in New York City...</h4>
+						<h4>2014 Results from the New Model</h4>
 						<div class="frag-container">
 								<div class="fragment fade-out multi-frag" data-fragment-index="1">
 									<div>
@@ -287,42 +341,80 @@
 								</div>
 								<div class="fragment fade-in multi-frag" data-fragment-index="1">
 									<div>
-							<img src="img/nyc2014_distance.svg" width="500px"/>
+							<img src="img/nyc2014_distance.png" width="500px"/>
 									</div>
 								</div>
 								</div>
+						<aside class="notes">
+							Histogram of users. 
+							Distance graph - more commute, less selling, less cycling
+						</aside>
 					</section>
 					<section>
-						<h4>There are <span class="red">$\sim 2500$ Electric Vehicles</span> <br>registered in New York City...</h4>
-					<img src="img/nyc2014_time.svg" width="550px"/>
+						<h4>2014 Results from the New Model</h4>
+					<img src="img/nyc2014_time.png" width="550px"/>
+					<aside class="notes">
+						commute time more, meaning you are travelling long distances, so little left to sell.
+					</aside>
 				</section>
-
+				</section>
+				<section>
 				<section hide-footer="yes"  data-background-image="img/map.svg"  data-background-position="center" data-background-repeat= "no-repeat" data-background-size="contain" data-background="#000000">
 					<div class="text-background-dark">
 							<h2 class="attn"> What about other cities?</h2>
 					</div>
+					<aside class="notes">
+						This was for NYC. But other cities may have different commute attributes and work habits.
+						Show cities
+					</aside>
 				</section>
 				<section hide-footer="yes">
-					<div class="frag-container">
-							<div class="fragment fade-out multi-frag" data-fragment-index="1">
-								<div>
+					<h4> Annual Savings for Multiple Cities</h4>
 						<img src="img/multicity_pricetaker.png" width="700px">
-								</div>
-							</div>
-							<div class="fragment fade-in multi-frag" data-fragment-index="1">
-								<div>
+					<aside class="notes">
+						What is a violin plot?
+						Mostly -ve savings, +ve if you are lucky!
+						Medians are big -ve values
+					</aside>
+				</section>
+				<section class="center">
+					<h4>
+					<ul>
+						<li>Price Taker: Sell each day, regardless of price</li><br>
+						<li>Optimial Selling Price: Sell when above optimized price</li>
+					</ul>
+				</h4>
+					
+				</section>
+				<section hide-footer="yes">
+					<h4>Annual Savings for Multiple Cities</h4>
 						<img src="img/multicity_violin.png" width="700px"/>
-								</div>
-							</div>
-						</div>
+					<aside class="notes">
+						Outliers - combo of distance, time, work hours.
+						Found that most cities you profit if you start work ~10:00 am - 4:00 pm
+						Observe huge variance in Phoenix and sf. Why might that be?
+					</aside>
+				</section>
+					
+				<section>
+					<h4>Exploring the Difference between NYC & SFC</h4>
+					<img src="img/NYC-CA-Day-Median.png">
+					<aside class="notes">
+						diff in variance in SF and NYC. 
+						NYC price changing all the time and going higher during diff times of the day.
+						SF LBMP is mostly high during this time.
+						We did this all for Tesla Model S. How will this change with varying battery capacities?
+					</aside>
 				</section>
 				<section>
-					<h4>Explaining the Difference between NYC & SFC</h4>
-					<img src="img/NYC-CA-Day-Median.png">
+					<h4>How do these results hold with different EV Models?
+					<img src="img/multi_sales.svg" width="680px"></h4>
+					<aside class="notes">
+						Graph of 2016 EV sales in the US.  We used this data to sample different battery capacities.
+					</aside>
 				</section>
-
 				<section hide-footer="yes">
-					<h5><strong>And for different battery sizes...</strong></h5>
+					<h4>Results for mutliple EV models</h4>
 					<!-- TODO: Add plots here-->
 					<div class="frag-container">
 							<div class="fragment fade-out multi-frag" data-fragment-index="1">
@@ -336,33 +428,62 @@
 								</div>
 							</div>
 						</div>
+					<aside class="notes">
+						less capacity -> mostly used for commute and very little to sell. So, bat deg not very diff from commute.
+						more capacity -> lot's to sell, but in price taker scenario - continuous cycling and hence bat deg.
+					</aside>
 				</section>
-
+				</section>
+				<section>
 				<section hide-footer="yes">
-					<h6><strong>The cost of Lithium Ion Battery has been falling rapidly</strong><br>
+					<h6>How do these results hold with falling battery costs?<br>
 						<img src="img/battery_cost.png" width="700px">
 					</h6>
-
+					<aside class="notes">
+						Remember battery capital cost imp factor in these calculations.
+						Cost of li-ion batteries reducing. 
+					</aside>
 				</section>
 				<section hide-footer="yes">
-					<h6><strong>And finally extrapolated battery capital cost into the future to see how savings from V2G are affected!</strong><br>
+					<h4>Results for Extrapolated Battery Capital Costs<h4>
 						<img src="img/future_cost_varying_osp.png" width="700px">
 					</h6>
-
+				<aside class="notes">
+					Some cities show a good growth in the median savings while others have an almost constant median.
+				</aside>
 				</section>
-				
-				<section>
+			</section>
+			<section>
+				<section class="center">
 					<h3>Conclusions</h3>
 					<ul style="font-size:80%">
+						<li> V2G is rarely profitable, even with cheaper batteries</li>
+						<li> Depreciation due to cycling battery is major cost</li>
 						<li> Savings from V2G depend on: 
 							<ol style="font-size: 90%">
 								<li> Commute and work parameters</li>
 								<li> Battery capacity of EV </li>
 							</ol>
-						</li><br>
-						<li> Under any combination of these parameters, pricetaker scenario is not profitable.</li><br>
-						<li> This model can be used by consumers to evaluate their profits from V2G</li><br>
-						<li> Policy makers can use this tool to draft policies for promotion of Electric vehicles and Vehicle-to-grid technology </li><br>
+						</li>
+						<li> Under any combination of these parameters, pricetaker scenario is not profitable.</li>
+						<li> We have built model for battery usage of V2G users </li>
+					</ul>
+				</section>
+				<section class="center">
+					<h3> Future Work</h3>
+					<ul style="font-size:80%">
+						<li> See the impact of V2G at grid scale</li>
+						<li> See how utilities are affected by V2G</li>
+						<li> Given our charge discharge cycles, what role could battery chemistry play in this?</li>
+						<li>Can we change user behavior, beyond state of charge limit, to minimize battery degradation?</li>
+					</ul>
+				</section>
+				<section class="center">
+					<h3>Acknowledgements</h3>
+					<ul class="font-size:80%">
+						<li> Department of Chemical Engineering, University of Rochester for financial support</li>
+						<li> Dr. Thomas Drennen</li>
+						<li> Members of the White Lab</li>
 					</ul>
 				</section>
 			</section>
