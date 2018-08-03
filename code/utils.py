@@ -6,6 +6,7 @@ import datetime as dt
 from pandas.tseries.holiday import USFederalHolidayCalendar
 import scipy.stats as ss
 import os
+import math
 
 def addtime(array = None, minutes = [0]):
 	''' This function adds the given time in minutes to the array elementwise
@@ -207,3 +208,23 @@ def plot_histogram(data, bins = 10, xlabel = None, ylabel = None, yticks = None,
 		plt.savefig('{}'.format(save_to))
 	else:
 		plt.show()
+
+def real_battery_degradation(cycle_number, battery_capacity = 60, DoD = 0.9, i_rate = 11.5, T = 318):
+    a = 8.61 * 10**(-6)     #1/Ah-K^2
+    b = -5.13 * 10**(-3)    #1/Ah-K
+    c = 7.63 * 10**(-1)     #1/Ah
+    d = -6.7 * 10**(-3)     #1/K-(C-rate)
+    e = 2.35                #1/C-rate
+    f = 392.017             #1/minute^0.5 (14876 1/day^0.5)
+    Ea = 24.5               #kJ/mol
+    R = 8.314               #J/mol-K
+    Ah = cycle_number * DoD * battery_capacity
+    b1 = a*T**2 + b*T + c
+    b2 = d*T + e
+    cycle_loss = b1* math.e**(b2*i_rate) * Ah
+    calendar_loss = f * math.e**(-Ea/R*T) * t**0.5 	#TODO: incorporate t in the function call
+
+
+def temperature_model():
+    # Most EVs have a thermal management system(TMS) so this is not required for now.
+	pass
