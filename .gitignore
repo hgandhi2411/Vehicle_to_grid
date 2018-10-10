@@ -1,28 +1,16 @@
-
-.vscode
-Results
-Results1
-reading
-ex files
-LBMP
-Population_data
-extra figures
-extra_code_files
-
 __pycache__
+.vscode
 
-# All result and unwanted files
-*.docx
-*.xlsm
+# All results, unnecessary files, and large files that git cannot handle
+Results
+LBMP
+PC
+Population_data
+Linear_model
+Realistic_model
+
 *.xlsx
-*.txt
-*.pdf
 *.zip
-
-#Unwanted csv files
-1230877_41.09_-74.02_2014 - solar.csv
-Cars.csv
-EV Sales 2016.csv
-PERV2PUB.CSV
-battery_price.csv
-
+*.pyc
+*.csv
+tests.py
