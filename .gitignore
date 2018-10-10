@@ -5,6 +5,7 @@ Results1
 reading
 ex files
 LBMP
+PC
 Population_data
 extra figures
 extra_code_files
@@ -18,11 +19,8 @@ __pycache__
 *.txt
 *.pdf
 *.zip
+*.pyc
 
 #Unwanted csv files
-1230877_41.09_-74.02_2014 - solar.csv
-Cars.csv
-EV Sales 2016.csv
-PERV2PUB.CSV
-battery_price.csv
+*.csv
 

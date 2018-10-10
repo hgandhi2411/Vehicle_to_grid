@@ -47,10 +47,10 @@ def rounddownTime(dtarray=None, roundTo=5*60):
 		dtarray[i] = dtarray[i] + dt.timedelta(0, rounding-seconds, -dtarray[i].microsecond)
 	return dtarray
 
-def makeDir(prefix, target):
-	if not os.path.exists(prefix + target):
-		os.makedirs(prefix + target)
-	return
+# def makeDir(prefix, target=None):
+# 	if not os.path.exists(os.path.join(prefix, target)):
+# 		os.makedirs(os.path.join(prefix, target))
+# 	return 
 
 
 def cost_calc(state, dates, price, battery, time_start, time_stop = None, daily_work_mins = None, set_SP = 0, battery_left = None, timedelta = 60):
@@ -80,14 +80,17 @@ def cost_calc(state, dates, price, battery, time_start, time_stop = None, daily_
 	
 	if(state == 'charging'):
 		total_cost = np.zeros(a)
+		percent_deg = np.zeros(a)
 		if battery_left is None:
 			battery_charged = np.zeros(a)
 		else:
 			battery_charged = battery_left
 		for j in range(a):
+			start = time_start[j] - dt.timedelta(seconds = 60)
 			time = time_start[j]
 			stop = time_stop[j]
 			cost = 0
+			# print((stop - time).seconds/60)
 			for i in range(len(dates)):
 				#print(time)
 				if(dates[i] == time):
@@ -96,16 +99,21 @@ def cost_calc(state, dates, price, battery, time_start, time_stop = None, daily_
 							# 5 minute window for the owner to come and start his vehicle
 							cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60 - 5) / 60 
 							battery_charged[j] += charging_rate * ((stop - time).seconds / 60 - 5) / 60
+							percent_deg[j] += real_battery_degradation(t = (time - start).seconds/60, timedelta=timedelta)
 							break
 						battery_charged[j] += charging_rate	#hourly
 						cost += charging_rate*eff*price[i]	#hourly
+						percent_deg[j] += real_battery_degradation(t = (time - start).seconds/60, timedelta=timedelta)
 						time += dt.timedelta(hours = 1)
 			total_cost[j] = cost
-		return total_cost, battery_charged
+			print(percent_deg)
+		return total_cost, battery_charged, percent_deg
 	
 	elif(state == 'discharging'):
 		total_cost = np.zeros(a)
 		battery_sold = np.zeros(a)
+		if battery_left is None:
+			battery_left = battery
 		for j in range(a):
 			time = time_start[j]
 			stop = rounddownTime([time + dt.timedelta(minutes = daily_work_mins[j])], roundTo = 60 * timedelta)[0]
@@ -160,13 +168,13 @@ def sampling(data, N, data2 = None, correlated = False, p = None, mask = None, i
 		data2 = np.array(data2)
 		if mask is None and index is None:
 			if p is None:
-				p = np.asarray([1/len(data)]*len(data))
+				p = np.asarray([1.0/len(data)]*len(data))
 			sampled_indices = np.random.choice(np.arange(len(data)), size = N, p = p)
 		else:
 			if index is not None:
 				index = index
 			elif mask is not None:		
-				index = data == [mask]*len(data)
+				index = data == ([mask]*len(data))
 			new_data = data[index]
 			p = np.asarray([1/len(new_data)]*len(new_data))
 			sampled_indices = np.random.choice(np.arange(len(new_data)), size = N, p = p)
@@ -209,21 +217,65 @@ def plot_histogram(data, bins = 10, xlabel = None, ylabel = None, yticks = None,
 	else:
 		plt.show()
 
-def real_battery_degradation(cycle_number, battery_capacity = 60, DoD = 0.9, i_rate = 11.5, T = 318):
-    a = 8.61 * 10**(-6)     #1/Ah-K^2
-    b = -5.13 * 10**(-3)    #1/Ah-K
-    c = 7.63 * 10**(-1)     #1/Ah
-    d = -6.7 * 10**(-3)     #1/K-(C-rate)
-    e = 2.35                #1/C-rate
-    f = 392.017             #1/minute^0.5 (14876 1/day^0.5)
-    Ea = 24.5               #kJ/mol
-    R = 8.314               #J/mol-K
-    Ah = cycle_number * DoD * battery_capacity
-    b1 = a*T**2 + b*T + c
-    b2 = d*T + e
-    cycle_loss = b1* math.e**(b2*i_rate) * Ah
-    calendar_loss = f * math.e**(-Ea/R*T) * t**0.5 	#TODO: incorporate t in the function call
+def real_battery_degradation(t, timedelta = 5, i_rate = 11.5, T = 318):
+	''' This function calculates the percentage of battery degradation happening at every time step
+	Args: 
+		t : time in minutes
+		timedelta : timestep in minutes, default = 5 minutes
+		battery_capacity : maximum battery capacity of the EV in kW, default = 60 kW
+		DoD : depth of discharge, default = 0.9
+		i_rate : charging/discharging rate of the battery, default = 11.5 kWh
+		T : battery temperature in Kelvin, default = 318K
+	Returns: float, total percentage loss in the battery capacity at given timestep timedelta
+	'''
 
+	#reference quantities
+	T_ref = 298.15 	# K
+	V_ref = 3.7		#V
+	U_ref = 0.08	#V
+	F = 96485 		# A s/mol	Faraday constant
+	R_ug = 8.314	# J/K/mol
+
+	#beginning of life increase in capacity
+	d3 = 0.43 		#Ah
+	d0_ref = 75.1 	#Ah
+	E_ad01 = 34300	# J/mol
+	E_ad02 = 74860	# J/mol
+
+	Ah_dis = i_rate	#discharge rate
+	d0 = d0_ref* math.e**(-(E_ad01/R_ug * (1/T - 1/T_ref)) -(E_ad02/R_ug)**2 * (1/T - 1/T_ref)**2)
+	Qpos = d0 + d3 * (1 - math.e**(-Ah_dis/228))
+
+	# Calendar aging
+	b1_ref = 3.503 * 10**(-3)	#1/ day^0.5
+	E_ab1 = 35392 	#J/mol
+	alpha_b1 = 1
+	gamma_b1 = 2.472
+	beta_b1 = 2.157
+	b0 = 1.07
+	b3_ref = 2.805 * 10**(-2)
+	E_ab3 = 42800 	#J/mol
+	alpha_b3 = 0.0066
+	tau_b3 = 5
+	theta = 0.135
+	b2_ref = 1.541 * 10**(-5)
+	E_ab2 = -42800 	#J/mol
+
+	b1 = b1_ref * math.e**(-(E_ab1/R_ug * (1/T - 1/T_ref))) * math.e**(alpha_b1 * F / R_ug * (Ut/T - U_ref/T_ref)) * math.e**(gamma_b1 * Dod**beta_b1)
+	b2 = b2_ref * math.e**(-(E_ab2/R_ug * (1/T - 1/T_ref)))
+	b3 = b3_ref * math.e**(-(E_ab3/R_ug * (1/T - 1/T_ref))) * math.e**(alpha_b3 * F / R_ug * (Voc/T - V_ref/T_ref)) * (1 + theta * Dod)
+	Qli = d0*(b0 - b1 * t**0.5 - b2 * N - b3 * (1 - math.e**(-t/ tau_b3)))
+
+	# Cycle aging
+	c2_ref = 3.9193*10**(-3)	#Ah/cycle
+	beta_c2 = 4.54
+	E_ac2 = -48260 	#J/mol
+	c0_ref = 75.64
+	E_ac0 = 2224	#J/mol
+
+	c0 = c0_ref * math.e**(-E_ac0/R_ug * (1/T - 1/T_ref))
+	c2 = c2_ref * math.e**(-E_ac2/R_ug * (1/T - 1/T_ref)) * Dod**beta_c2
+	Qneg = (c0**2 - 2*c2*c0* N)**0.5
 
 def temperature_model():
     # Most EVs have a thermal management system(TMS) so this is not required for now.
