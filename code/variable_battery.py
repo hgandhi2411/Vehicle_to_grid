@@ -15,9 +15,12 @@ from utils import *
 plt.rcParams['figure.figsize'] = (10.0, 8.0)
 sns.set(style= "darkgrid", context="talk", palette='hls')
 
-prefix = os.path.join(os.path.expanduser('~'),'Documents', 'Heta', 'White lab', 'Vehicle_to_grid')
+prefix = ''
 
-Sample = 6119    #total EVs in NYC 2015
+# prefix = os.path.join(os.path.expanduser('~'),'Documents', 'Heta', 'White lab', 'Vehicle_to_grid')
+
+Sample = 2813    #total EVs in NYC Sept2018
+#Source: https://www.nyserda.ny.gov/All-Programs/Programs/ChargeNY/Support-Electric/Map-of-EV-Registrations
 
 cars = pd.read_csv(os.path.join(prefix,'Cars.csv'), delimiter= ',')
 rated_dist_dict, charge_time_dict = {}, {}
@@ -25,6 +28,7 @@ for i in range(len(cars.Battery)):
 	rated_dist_dict[cars.Battery[i]] = cars.dist[i]
 	charge_time_dict[cars.Battery[i]] = cars.Charge_time[i]
 battery = np.random.choice(cars.Battery, size = Sample, p = cars.prob)
+battery_commute = np.copy(battery)
 
 dist_one_kWh = np.array([rated_dist_dict[i] for i in battery])
 
@@ -43,14 +47,11 @@ charging_rate = 11.5
 lifecycles = 5300		#for lithium ion battery from Gerad's article
 energy_throughput = 2*lifecycles*battery*DoD 		#Ln.Es.DoD (kWh)
 
-battery_cap_cost = 410			# $/kWh Nykvist and nilsson 2015, for 2014
-# Alternately from https://electrek.co/2017/02/18/tesla-battery-cost-gigafactory-model-3/
+battery_cap_cost = 209	
+# Nikolas Soulopoulos, Cost Projections - Battery, vehicles and TCO, BNEF, June 2018 Report
 
 bat_degradation = battery * battery_cap_cost/energy_throughput			
 # using Gerad's equation, cb is the cost of current storage which will be introduced later.
-
-lcos = 1142/1000			
-# $/kWh, Lazards LCOS V2.0 2016, Commercial lithium ion category average
 
 working_days = 250
 
@@ -164,7 +165,9 @@ for s in state_list:
 	final_cdgdn = np.zeros((x, Sample))
 	final_commute_cdgdn = np.zeros(Sample) 
 	final_commute_cost = np.zeros(Sample)
-	battery_cycles = 0
+	battery_cycles = np.zeros((x, Sample))
+	q_deg = np.zeros((x, Sample))
+	commute_cycles = np.zeros(Sample)
 	k = 0
 	day = dt.datetime(2017,1,1,0,0)
 	count = 1
@@ -194,37 +197,39 @@ for s in state_list:
 
 			for i in range(x):
 				
-				if battery_charged[i].all() != 0:
-					cost_discharging, battery_sold = cost_calc(state = 'discharging', dates = date_set, price = price_set, battery = battery, time_start = time_discharge_starts, time_stop = None, daily_work_mins = daily_work_mins, set_SP = SP[i], battery_left = battery_charged[i], timedelta = 60)
-				else:
-					cost_discharging, battery_sold = cost_calc(state = 'discharging', dates = date_set, price = price_set, battery = battery, time_start = time_discharge_starts, time_stop = None, daily_work_mins = daily_work_mins, set_SP = SP[i], battery_left = battery_charged[i], timedelta = 60)
+				#Start with discharging, assuming battery has been used to commute one way
+				cost_discharging, battery_sold = cost_calc(state = 'discharging', dates = date_set, price = price_set, battery = battery * (1 - q_deg[i]), time_start = time_discharge_starts,  N = battery_cycles[i], time_stop = None, daily_work_mins = daily_work_mins, set_SP = SP[i], battery_left = battery_charged[i] - battery_used_for_travel/2, timedelta = 60)
 				final_discharge_cost[i] += cost_discharging
 				battery_used[i] = battery_sold + battery_used_for_travel
+
+				#Fast forward time to when charging should start
 				time_leaving_work = addtime(time_arrival_work, daily_work_mins)
 				time_reach_home = addtime(time_leaving_work, commute_time)
-				#print('time_reach_home', time_reach_home)
 				time_charging_starts = roundupTime(time_reach_home)
-				#print('time_charging_starts', time_charging_starts)
 				time_charging_stops = addtime(time_charging_starts, complete_charging_time*battery_used[i]/battery)
 				time_charging_stops = roundupTime(time_charging_stops)
-				cost_charging, battery_charged[i] = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery, time_start = time_charging_starts, time_stop = time_charging_stops, battery_left = battery - battery_used[i], timedelta=60) 
+
+				#Charge the battery
+				cost_charging, battery_charged[i], q_loss = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery * (1 - q_deg[i]), time_start = time_charging_starts, N = battery_cycles[i], time_stop = time_charging_stops, battery_left = battery - battery_used[i], timedelta=60) 
 				cost_charging += battery_used[i] * bat_degradation * eff
 				final_cdgdn[i] += battery_used[i] * bat_degradation * eff
 				final_charge_cost[i] += cost_charging
+				q_deg[i] += q_loss
 
 			#Cost of commute without V2G
-			charge_commute_stop = addtime(time_charging_starts, complete_charging_time*battery_used_for_travel/battery)
+			charge_commute_stop = addtime(time_charging_starts, complete_charging_time*battery_used_for_travel/battery_commute)
 			charge_commute_stop = rounddownTime(np.asarray(charge_commute_stop))
-			cost_commute, battery_charged_commute = cost_calc(state = 'charging', dates= date_set, price = price_set, battery= battery, time_start = time_charging_starts, time_stop = charge_commute_stop, battery_left = battery - battery_used_for_travel) 
+			cost_commute, battery_charged_commute, q_loss_commute = cost_calc(state = 'charging', dates= date_set, price = price_set, battery = battery_commute,  N = commute_cycles, time_start = time_charging_starts, time_stop = charge_commute_stop, battery_left = battery_commute - battery_used_for_travel) 
+			commute_cycles += battery_charged_commute/battery_commute
 			cost_commute += battery_used_for_travel * bat_degradation * eff
 			final_commute_cdgdn += battery_used_for_travel * bat_degradation * eff
 			final_commute_cost += cost_commute
-			#print(final_commute_cost)
+			battery_commute = battery_commute * (1 - q_loss_commute)
 
 			for i in range(Sample):
 				time_arrival_work[i] += dt.timedelta(days = 1)
 			k += 24
-			day+=dt.timedelta(days=1)
+			day += dt.timedelta(days=1)
 			battery_cycles += battery_used/battery
 			count+=1
 			
@@ -239,48 +244,24 @@ for s in state_list:
 	colors = ['#ffff00','#40E0D0','#ff0000', '#191970']
 	alpha = [1, 0.7, 0.5, 0.3]
 
-	cdgdn_commute = np.mean(final_commute_cdgdn)
-	cch_commute = np.mean(final_commute_cost - final_commute_cdgdn)
 	Annual_savings = np.zeros((x,Sample))
-	mean, cdgdn, cch, rt, y = [], [], [], [], []
-	ci = 0.95
-	z = ss.norm.ppf((1+ci)/2)
 
 	for i in range(x):
 		Annual_savings[i] = final_discharge_cost[i] - final_charge_cost[i] - (0.0 - final_commute_cost)
-		#Calculating statistics and CIs
-		mean.append(np.mean(Annual_savings[i]))
-		y.append(np.percentile(Annual_savings[i], [2.5, 97.5]))
-		cdgdn.append(np.mean(final_cdgdn[i]))
-		cch.append(np.mean(final_charge_cost[i] - final_cdgdn[i]))
-		rt.append(np.mean(final_discharge_cost[i])) #revenue from V2G
-
-	argmax = np.argmax(mean)
-	key = '{}\n{}'.format(s,SP[argmax])
-	max_savings[key] = Annual_savings[argmax]
-	pricetaker_savings[s] = Annual_savings[0]
-
 
 	if not os.path.exists(os.path.join(result_path, s)):
 		os.makedirs(os.path.join(result_path, s))
-	output = os.path.join(result_path, s, 'data.csv')
-	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery}
+	output = os.path.join(result_path, s, 'savings.csv')
+	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'Commute_cost': final_commute_cost, 'Commute final Q': battery_commute}
 	results.update({'Savings{}'.format(a):b for a,b in zip(SP, Annual_savings)})
 	results.update({'Cycle{}'.format(a):b for a,b in zip(SP, battery_cycles)})
+	results.update({'Q_loss{}'.format(a):b for a,b in zip(SP, q_deg)})
 	results = pd.DataFrame.from_dict(results)
 	results.to_csv(output)
 
-	#Writing values to a file
-	output = open(os.path.join(result_path, s, 'data.txt'), 'w+')
-	output.write('efficiency = {} \nSP \t\tSavings mean\t\tCI95 \t\t\t Mean cycles\n'.format(eff))
-	for i in range(x):
-		output.write('{} \t\t{} \t\t{} \t\t{}\n'.format(SP[i], mean[i], y[i], np.mean(battery_cycles[i])))
-	output.write('cdgdn = {} \ncch = {} \nrt = {} \ncdgdn_commute = {} \ncch_commute = {} \n'.format(cdgdn, cch, rt, cdgdn_commute, cch_commute))
-	output.write('\n')
-	output.write('\ndistance = {}, mean = {:.2f} \ntime = {}, mean = {:.2f} \nwork hours = {}, mean = {:.2f} \n'.format(commute_dist, np.mean(commute_dist), commute_time, np.mean(commute_time), daily_work_mins/60.0, np.mean(daily_work_mins/60.0)))
-	output.close()
-
 '''
+	#Plotting
+
 	def square_plot(ax):
 		#make the aspect ratio of data match that of plot
 		xl, xh, yl, yh = ax.axis()
@@ -311,8 +292,8 @@ for s in state_list:
 		fig = plt.figure(figsize=(8, 7))
 		grid = plt.GridSpec(2, 3, width_ratios = [3,1, 0.1], height_ratios=[1,3], hspace=0.05, wspace= 0.07) # hspace = 0.1, wspace = 0.2
 		main_ax = fig.add_subplot(grid[1,0])
-		y_hist = fig.add_subplot(grid[1,1], yticklabels=[]) #sharey=main_ax)# , xticklabels=[], yticklabels=[])#
-		x_hist = fig.add_subplot(grid[0,0], xticklabels=[]) #sharex=main_ax)# , yticklabels=[], xticklabels=[])# 
+		y_hist = fig.add_subplot(grid[1,1], yticklabels=[]) #sharey=main_ax)# , xticklabels=[], yticklabels=[])
+		x_hist = fig.add_subplot(grid[0,0], xticklabels=[]) #sharex=main_ax)# , yticklabels=[], xticklabels=[]) 
 		cax = fig.add_subplot(grid[1,2])
 
 		# scatter points on the main axes
