@@ -91,6 +91,7 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 			battery_charged = battery_left
 		for j in range(a):
 			start = time_start[j] - dt.timedelta(seconds = 60)
+			time_1 = start
 			time = time_start[j]
 			stop = time_stop[j]
 			cost = 0
@@ -98,20 +99,26 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 			for i in range(len(dates)):
 				#print(time)
 				if(dates[i] == time):
-					if((battery_charged[j] <= battery[j]*DoD) and (time <= stop)):
+					if((battery_charged[j] <= battery[j]) and (time <= stop)):
 						if((stop - time).seconds / 60 < 60):
 							# 5 minute window for the owner to come and start his vehicle
 							cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60 - 5) / 60 
 							battery_charged[j] += charging_rate * ((stop - time).seconds / 60 - 5) / 60
+							if(battery_charged[j] > battery[j]):
+								battery_charged[j] = battery[j]
 							soc = max(0.2, battery_charged[j]/battery[j])
-							percent_deg[j] += real_battery_degradation(t = (time - start).seconds/60, SOC = soc, N = N[j])
+							percent_deg[j] += real_battery_degradation(t = (stop - start).seconds/60, SOC = soc, N = N[j])
 							break
 						battery_charged[j] += charging_rate	#hourly
+						if (battery_charged[j] > battery[j]):
+							battery_charged[j] = battery[j]
 						cost += charging_rate*eff*price[i]	#hourly
 						soc = max(0.2, battery_charged[j]/battery[j])
-						percent_deg[j] += real_battery_degradation(t = (time - start).seconds/60, SOC = soc, N = N[j])
+						percent_deg[j] += real_battery_degradation(t = (time - time_1).seconds/60, SOC = soc, N = N[j])
+						time_1 = time
 						time += dt.timedelta(hours = 1)
 			total_cost[j] = cost
+		# print(percent_deg)
 		return total_cost, battery_charged, percent_deg
 	
 	elif(state == 'discharging'):
@@ -227,9 +234,9 @@ def plot_histogram(data, bins = 10, xlabel = None, ylabel = None, yticks = None,
 		plt.show()
 
 def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.8):
-	''' This function calculates the percentage of battery degradation happening at every time step
+	''' This function calculates the percentage of battery degradation happening at every time step for NCA li-ion chemistry
 	Args: 
-		t : time in minutes
+		t : time in minutes (time_step of operation)
 		N : cycle number, default = 0, no cycling
 		battery_capacity : maximum battery capacity of the EV in kW, default = 60 kW
 		DoD : depth of discharge, default = 0.9
@@ -238,55 +245,29 @@ def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max
 	Returns: float, total percentage loss in the battery capacity at given timestep timedelta
 	'''
 
-	V_nom = 323		#V Nominal voltage of EV batteries
+	V_nom = 360		#V Nominal voltage of EV batteries
 	#reference quantities
 	T_ref = 298.15 	# K
-	V_ref = 3.7		#V
-	U_ref = 0.08	#V
-	F = 96485 		# A s/mol	Faraday constant
-	R_ug = 8.314	# J/K/mol
+	V_ref = 3.6		#V
+	Dod_ref = 1
+	F = 96485 		# Amp s/mol	Faraday constant
+	Rug = 8.314	# J/K/mol
 
-	#beginning of life increase in capacity
-	d3 = 0.43 		#Ah
-	d0_ref = 75.1 	#Ah
-	E_ad01 = 34300	# J/mol
-	E_ad02 = 74860	# J/mol
+	# fitted parameters for NCA chemistries
+	b0 = 1.04
+	c0= 1
+	b1_ref = 1.794 * 10**(-4)	# 1/day^(0.5)
+	c2_ref = 1.074 * 10**(-4)	# 1/day
+	Eab1 = 35000				# J/mol /K
+	alpha_b1 = 0.051
+	beta_b1 = 0.99
+	Eac2 = 35000				# J/mol /K
+	alpha_c2 =  0.023
+	beta_c2 = 2.61
+	t_life = 1					#day
 
-	Ah_dis = i_rate * 1000/360 #cumulative Ah discharged from the cell, Ah -> kWh * 1000 / V
-	d0 = d0_ref* math.e**(-(E_ad01/R_ug * (1/T - 1/T_ref)) - ((E_ad02/R_ug)**2 * (1/T - 1/T_ref)**2))
-
-	Qpos = d0 + d3 * (1 - math.e**(-Ah_dis/228))
-
-	# Calendar aging
-	t = t/24*60		#days
-	b1_ref = 3.503 * 10**(-3)	#1/ day^0.5
-	E_ab1 = 35392 	#J/mol
-	alpha_b1 = 1
-	gamma_b1 = 2.472
-	beta_b1 = 2.157
-	b0 = 1.07
-	b3_ref = 2.805 * 10**(-2)
-	E_ab3 = 42800 	#J/mol
-	alpha_b3 = 0.0066
-	tau_b3 = 5
-	theta = 0.135
-	b2_ref = 1.541 * 10**(-5)
-	E_ab2 = -42800 	#J/mol
-
-	#For Li-C anode
-	xa_0 = 8.5 * 10**(-3)
-	xa_100 = 7.8 * 10**(-1)
-	xa = xa_0 + SOC * (xa_100 - xa_0)
-	Ua = 0.6379 + 0.5416 * math.e**(-305.5309 * xa) + 0.044 * math.tanh(- (xa - 0.1958)/0.1088) - 0.1978 * math.tanh((xa- 1.057)/0.0854) - 0.6875 * math.tanh((xa + 0.0117)/0.0529) - 0.0175 * math.tanh((xa - 0.5692)/0.0875)
-	#For LFP cathode
-	xc_0 = 9.16 * 10**(-1)
-	xc_100 = 4.5 * 10**(-2)
-	xc = xc_0 + SOC * (xc_100 - xc_0)
-	Uc = 3.4323 - 0.8428 * math.e**(-80.2493 * (1 - xc)**1.3198) - 3.2474 * 10**(-6) * math.e**(20.2645 * (1 - xc)**3.8003) + 3.2482 * 10**(-6) * math.e**(20.2646 * (1 - xc)**3.7995)
-
-	Ut = Ua + Uc
 	# Voc calc reference: Energies 2016, 9, 900 
-	# Parameters for LMNCO cathodes at 45 degreeC
+	# Parameters for LMNCO cathodes at 45 degreeC - couldn't find for NCA batteries
 	a = 3.535
 	b = -0.0571
 	c = -0.2847
@@ -295,28 +276,20 @@ def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max
 	n = 2
 	Voc = a + b * (-math.log(SOC))**m + c * SOC + d * math.e**(n * (SOC - 1))
 
+	#integral over delta(tcyc) ignored because we are considering one time step 
+	b1 = (b1_ref / t) * math.e**(-Eab1/Rug * (1/T - 1/T_ref)) \
+		* math.e**(alpha_b1 * F / Rug *(Voc/T - V_ref/T_ref)) \
+		* (((1 + Dod_max)/Dod_ref)**beta_b1)
 
-	b1 = b1_ref * math.e**(-(E_ab1/R_ug * (1/T - 1/T_ref))) *  math.e**(gamma_b1 * Dod_max**beta_b1) * math.e**(alpha_b1 * F / R_ug * (0.0800056/T - U_ref/T_ref)) 
+	Qli = b0 - b1*t_life
 
-	b2 = b2_ref * math.e**(-(E_ab2/R_ug * (1/T - 1/T_ref)))
-	b3 = b3_ref * math.e**(-(E_ab3/R_ug * (1/T - 1/T_ref))) * math.e**(alpha_b3 * F / R_ug * (Voc/T - V_ref/T_ref)) * (1 + theta * Dod_max)
-	Qli = d0*(b0 - b1 * t**0.5 - b2 * N)# - b3 * (1 - math.e**(-t/ tau_b3)))
+	c2 = (c2_ref/t) *  math.e**(-Eac2/Rug * (1/T - 1/T_ref)) \
+		* math.e**(alpha_c2 * F / Rug *(Voc/T - V_ref/T_ref)) \
+		* (N* (Dod_max/Dod_ref)**beta_c2)
 
-	# Cycle aging
-	c2_ref = 3.9193*10**(-3)	#Ah/cycle
-	beta_c2 = 4.54
-	E_ac2 = -48260 	#J/mol
-	c0_ref = 75.64
-	E_ac0 = 2224	#J/mol
+	Qsites = c0 - c2 * t_life
 
-	c0 = c0_ref * math.e**(-E_ac0/R_ug * (1/T - 1/T_ref))
-	c2 = c2_ref * math.e**(-E_ac2/R_ug * (1/T - 1/T_ref)) * Dod_max**beta_c2
-	Qneg = (c0**2 - 2*c2*c0* N)**0.5
+	Q_loss = min(Qli, Qsites)
+	# print(Qli, Qsites)
 
-	Q_loss = min(Qli, Qpos, Qneg)
-	print(Qli, Qpos, Qneg)
-	return Q_loss
-
-def temperature_model():
-    # Most EVs have a thermal management system(TMS) so this is not required for now.
-	pass
+	return Q_loss*360/1000		#Q_loss is in Ah, converting that to kWh

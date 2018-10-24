@@ -1,26 +1,15 @@
-
+__pycache__
 .vscode
+
+# All results, unnecessary files, and large files that git cannot handle
 Results
-Results1
-reading
-ex files
 LBMP
 PC
 Population_data
-extra figures
-extra_code_files
+Linear_model
 
-__pycache__
-
-# All result and unwanted files
-*.docx
-*.xlsm
 *.xlsx
-*.txt
-*.pdf
 *.zip
 *.pyc
-
-#Unwanted csv files
 *.csv
 

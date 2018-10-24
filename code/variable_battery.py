@@ -214,7 +214,7 @@ for s in state_list:
 				cost_charging += battery_used[i] * bat_degradation * eff
 				final_cdgdn[i] += battery_used[i] * bat_degradation * eff
 				final_charge_cost[i] += cost_charging
-				q_deg[i] += q_loss
+				q_deg[i] += q_loss/battery
 
 			#Cost of commute without V2G
 			charge_commute_stop = addtime(time_charging_starts, complete_charging_time*battery_used_for_travel/battery_commute)
@@ -258,98 +258,3 @@ for s in state_list:
 	results.update({'Q_loss{}'.format(a):b for a,b in zip(SP, q_deg)})
 	results = pd.DataFrame.from_dict(results)
 	results.to_csv(output)
-
-'''
-	#Plotting
-
-	def square_plot(ax):
-		#make the aspect ratio of data match that of plot
-		xl, xh, yl, yh = ax.axis()
-		ax.set_aspect((xh - xl) / (yh - yl), adjustable='box')
-
-	time_depart = np.zeros(Sample)
-	for i in range(Sample):
-		time_depart[i] = time_depart_from_home[i].hour + time_depart_from_home[i].minute/60
-	
-	for i in range(x):
-
-		# distance jointplot
-		g = (sns.jointplot(battery, Annual_savings[i], kind = 'hex', gridsize = 20, marginal_kws={'bins': 20})).set_axis_labels("Battery size (kWh)", "Annual Savings")
-		# g.ax_joint.add_patch(ellipse)
-		# yticks = np.round(np.arange(np.min(Annual_savings[i]), np.max(Annual_savings[i]), step= int((np.max(Annual_savings[i]) - np.min(Annual_savings[i]))/10))/500.0)*500
-		# g.ax_joint.set_yticks(yticks)
-		plt.title('SP = {}'.format(SP[i]))
-		plt.savefig(files[i])
-		plt.close() #close the figure
-
-		cmap = mlib.cm.hot
-		#cmap = sns.light_palette('#4682b4', as_cmap = True)
-		m = mlib.cm.ScalarMappable(cmap=cmap)
-		m.set_array(Annual_savings[i]) 
-		
-
-		# a weighted joint plot showing relation between time, time of departure and savings 
-		fig = plt.figure(figsize=(8, 7))
-		grid = plt.GridSpec(2, 3, width_ratios = [3,1, 0.1], height_ratios=[1,3], hspace=0.05, wspace= 0.07) # hspace = 0.1, wspace = 0.2
-		main_ax = fig.add_subplot(grid[1,0])
-		y_hist = fig.add_subplot(grid[1,1], yticklabels=[]) #sharey=main_ax)# , xticklabels=[], yticklabels=[])
-		x_hist = fig.add_subplot(grid[0,0], xticklabels=[]) #sharex=main_ax)# , yticklabels=[], xticklabels=[]) 
-		cax = fig.add_subplot(grid[1,2])
-
-		# scatter points on the main axes
-		a = main_ax.hexbin(commute_time, time_depart, C = Annual_savings[i] , cmap = cmap, gridsize = 15, vmin = low, vmax = high, edgecolors = None)
-		main_ax.set_xlabel('Commute time (minutes)')
-		main_ax.set_ylabel('time of departure (hour of the day) ')
-
-		# histogram on the attached axes
-		x_hist.hist(commute_time, 15, histtype='bar',
-					orientation='vertical', color = '#ffa07a')
-		#x_hist.invert_yaxis()
-
-		y_hist.hist(time_depart, 15, histtype='bar',
-					orientation='horizontal', color = '#ffa07a')
-		y_hist.invert_xaxis()
-
-		#fig.subplots_adjust(right = 0.9)
-		cbar1 = plt.colorbar(a, cax = cax)
-		cbar1.ax.set_ylabel('Annual savings from V2G')
-		plt.suptitle('SP = {}'.format(SP[i]))
-		plt.savefig(files2[i])
-		plt.close()
-
-		cmap1 = mlib.cm.winter
-		#cmap = sns.light_palette('#4682b4', as_cmap = True)
-		m = mlib.cm.ScalarMappable(cmap=cmap1)
-		m.set_array(Annual_savings[i]) 
-		
-		# a weighted joint plot showing relation between battery size, commute distance and savings 
-		fig = plt.figure(figsize=(8, 7))
-		grid = plt.GridSpec(2, 3, width_ratios = [3,1, 0.1], height_ratios=[1,3], hspace=0.05, wspace= 0.07) # hspace = 0.1, wspace = 0.2
-		main_ax = fig.add_subplot(grid[1,0])
-		y_hist = fig.add_subplot(grid[1,1], yticklabels=[]) #sharey=main_ax)# , xticklabels=[], yticklabels=[])#
-		x_hist = fig.add_subplot(grid[0,0], xticklabels=[]) #sharex=main_ax)# , yticklabels=[], xticklabels=[])# 
-		cax = fig.add_subplot(grid[1,2])
-
-		print('Starting the distance plot!')
-		# scatter points on the main axes
-		a = main_ax.hexbin(battery, commute_dist, C = Annual_savings[i] , cmap = cmap1, gridsize = 15, vmin = low, vmax = high, edgecolors = None)
-		main_ax.set_xlabel('Battery size (kWh)')
-		main_ax.set_ylabel('Commute distance (miles)')
-
-		# histogram on the attached axes
-		x_hist.hist(battery, 15, histtype='bar',
-					orientation='vertical', color = '#40E0D0')
-		#x_hist.invert_yaxis()
-
-		y_hist.hist(commute_dist, 15, histtype='bar',
-					orientation='horizontal', color = '#40E0D0')
-		y_hist.invert_xaxis()
-
-		#fig.subplots_adjust(right = 0.9)
-		cbar1 = plt.colorbar(a, cax = cax)
-		cbar1.ax.set_ylabel('Annual savings from V2G')
-		plt.suptitle('SP = {}'.format(SP[i]))
-		plt.savefig(files3[i])
-		plt.close()
-
-'''
