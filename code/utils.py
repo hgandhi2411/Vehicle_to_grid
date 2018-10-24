@@ -8,6 +8,24 @@ import scipy.stats as ss
 import os
 import math
 
+def state_pop(state):
+    pop_files = {'Arizona': 'ss16paz.csv',
+                'California': 'ss16pca.csv',
+                'DC': 'ss16pdc.csv',
+                'Illinois': 'ss16pil.csv',
+                'Massachusetts': 'ss16pma.csv',
+                'New York': 'ss16pny.csv',
+                'Texas': 'ss16ptx.csv'}
+    LBMP_file = {'Arizona': 'phoenix.csv',
+                'California': 'sfca.csv',
+                'DC': 'washingtondc.csv',
+                'Illinois': 'chicago.csv',
+                'Massachusetts': 'boston.csv',
+                'New York': 'nyc.csv',
+                'Texas': 'houston.csv'}
+    return os.path.join('Population_data', pop_files[state]), os.path.join('LBMP', LBMP_file[state])
+
+
 def addtime(array = None, minutes = [0]):
 	''' This function adds the given time in minutes to the array elementwise
 		Args: array : The array to which time has to be added 
