@@ -8,6 +8,24 @@ import scipy.stats as ss
 import os
 import math
 
+def state_pop(state):
+    pop_files = {'Arizona': 'ss16paz.csv',
+                'California': 'ss16pca.csv',
+                'DC': 'ss16pdc.csv',
+                'Illinois': 'ss16pil.csv',
+                'Massachusetts': 'ss16pma.csv',
+                'New York': 'ss16pny.csv',
+                'Texas': 'ss16ptx.csv'}
+    LBMP_file = {'Arizona': 'phoenix.csv',
+                'California': 'sfca.csv',
+                'DC': 'washingtondc.csv',
+                'Illinois': 'chicago.csv',
+                'Massachusetts': 'boston.csv',
+                'New York': 'nyc.csv',
+                'Texas': 'houston.csv'}
+    return os.path.join('Population_data', pop_files[state]), os.path.join('LBMP', LBMP_file[state])
+
+
 def addtime(array = None, minutes = [0]):
 	''' This function adds the given time in minutes to the array elementwise
 		Args: array : The array to which time has to be added 
@@ -78,7 +96,7 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 	DoD = 0.90   #depth of discharge
 	charging_rate = 11.5
 	a = len(time_start)
-
+	time_start = rounddownTime(time_start, roundTo= 60*60)
 	if type(battery) == int:
 		battery = np.array([battery] * a)
 	
@@ -86,37 +104,43 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 		total_cost = np.zeros(a)
 		percent_deg = np.zeros(a)
 		if battery_left is None:
-			battery_charged = np.zeros(a)
+			battery_charged = battery*(1-DoD)
 		else:
 			battery_charged = battery_left
 		for j in range(a):
-			start = time_start[j] - dt.timedelta(seconds = 60)
-			time_1 = start
+			start = time_start[j]
 			time = time_start[j]
 			stop = time_stop[j]
 			cost = 0
-			# print((stop - time).seconds/60)
 			for i in range(len(dates)):
-				#print(time)
+				n = -1
 				if(dates[i] == time):
-					if((battery_charged[j] <= battery[j]) and (time <= stop)):
+					if((battery_charged[j] <= battery[j]) and (time < stop)):
 						if((stop - time).seconds / 60 < 60):
 							# 5 minute window for the owner to come and start his vehicle
-							cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60 - 5) / 60 
-							battery_charged[j] += charging_rate * ((stop - time).seconds / 60 - 5) / 60
+							cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60) / 60 
+							battery_charged[j] += charging_rate * ((stop - time).seconds / 60) / 60
 							if(battery_charged[j] > battery[j]):
 								battery_charged[j] = battery[j]
 							soc = max(0.2, battery_charged[j]/battery[j])
-							percent_deg[j] += real_battery_degradation(t = (stop - start).seconds/60, SOC = soc, N = N[j])
+							if(n != -1):
+								percent_deg[j] += real_battery_degradation(t = (stop - start).seconds/60 - n*60, SOC = soc, N = N[j])
+							else:
+								percent_deg[j] += real_battery_degradation(t = (stop - start).seconds/60, SOC = soc, N = N[j])
 							break
 						battery_charged[j] += charging_rate	#hourly
 						if (battery_charged[j] > battery[j]):
 							battery_charged[j] = battery[j]
 						cost += charging_rate*eff*price[i]	#hourly
 						soc = max(0.2, battery_charged[j]/battery[j])
-						percent_deg[j] += real_battery_degradation(t = (time - time_1).seconds/60, SOC = soc, N = N[j])
-						time_1 = time
+						if(n != -1):
+							percent_deg[j] += real_battery_degradation(t = (time - start).seconds/60 - n*60, SOC = soc, N = N[j]) 
+						else:
+							percent_deg[j] += real_battery_degradation(t = (stop - start).seconds/60, SOC = soc, N = N[j])
+						# -n*60 to factor for the fact that time - start is cumulative
 						time += dt.timedelta(hours = 1)
+						n += 1
+						# print(cost)
 			total_cost[j] = cost
 		# print(percent_deg)
 		return total_cost, battery_charged, percent_deg
@@ -136,7 +160,7 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 			money_earned = 0
 			for i in range(len(dates)):
 				if(dates[i] == time):
-					if((price[i] >= set_SP) and (battery_sold[j] <= battery_left[j]) and (time <= stop)):
+					if((price[i] >= set_SP) and (battery_sold[j] <= battery_left[j]) and (time < stop)):
 						if((stop - time).seconds / 60 < 60):
 						# 5 minute window for the owner to come and start his vehicle
 							money_earned += charging_rate * eff * price[i] * ((stop - time).seconds / 60 - 5) / 60 
@@ -233,7 +257,7 @@ def plot_histogram(data, bins = 10, xlabel = None, ylabel = None, yticks = None,
 	else:
 		plt.show()
 
-def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.8):
+def real_battery_degradation(t, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.8):
 	''' This function calculates the percentage of battery degradation happening at every time step for NCA li-ion chemistry
 	Args: 
 		t : time in minutes (time_step of operation)
@@ -244,12 +268,12 @@ def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max
 		T : battery temperature in Kelvin, default = 318K
 	Returns: float, total percentage loss in the battery capacity at given timestep timedelta
 	'''
-
+	t = t/24/60		#convert minutes to days
 	V_nom = 360		#V Nominal voltage of EV batteries
 	#reference quantities
 	T_ref = 298.15 	# K
 	V_ref = 3.6		#V
-	Dod_ref = 1
+	Dod_ref = 1.0
 	F = 96485 		# Amp s/mol	Faraday constant
 	Rug = 8.314	# J/K/mol
 
@@ -280,8 +304,9 @@ def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max
 	b1 = (b1_ref / t) * math.e**(-Eab1/Rug * (1/T - 1/T_ref)) \
 		* math.e**(alpha_b1 * F / Rug *(Voc/T - V_ref/T_ref)) \
 		* (((1 + Dod_max)/Dod_ref)**beta_b1)
-
-	Qli = b0 - b1*t_life
+	
+	b1 = max(0, b1)
+	Qli = b0 - b1*t_life**(0.5)
 
 	c2 = (c2_ref/t) *  math.e**(-Eac2/Rug * (1/T - 1/T_ref)) \
 		* math.e**(alpha_c2 * F / Rug *(Voc/T - V_ref/T_ref)) \
@@ -289,7 +314,7 @@ def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max
 
 	Qsites = c0 - c2 * t_life
 
-	Q_loss = min(Qli, Qsites)
+	Q_loss = min(Qli, Qsites)		# Q_loss is % degradation
 	# print(Qli, Qsites)
 
-	return Q_loss*360/1000		#Q_loss is in Ah, converting that to kWh
+	return Q_loss		
