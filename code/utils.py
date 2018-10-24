@@ -251,7 +251,7 @@ def plot_histogram(data, bins = 10, xlabel = None, ylabel = None, yticks = None,
 	else:
 		plt.show()
 
-def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.8):
+def real_battery_degradation(t, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.8):
 	''' This function calculates the percentage of battery degradation happening at every time step for NCA li-ion chemistry
 	Args: 
 		t : time in minutes (time_step of operation)
@@ -262,7 +262,7 @@ def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max
 		T : battery temperature in Kelvin, default = 318K
 	Returns: float, total percentage loss in the battery capacity at given timestep timedelta
 	'''
-
+	t = t/24/60		#convert minutes to days
 	V_nom = 360		#V Nominal voltage of EV batteries
 	#reference quantities
 	T_ref = 298.15 	# K
@@ -298,8 +298,9 @@ def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max
 	b1 = (b1_ref / t) * math.e**(-Eab1/Rug * (1/T - 1/T_ref)) \
 		* math.e**(alpha_b1 * F / Rug *(Voc/T - V_ref/T_ref)) \
 		* (((1 + Dod_max)/Dod_ref)**beta_b1)
-
-	Qli = b0 - b1*t_life
+	
+	b1 = max(0, b1)
+	Qli = b0 - b1*t_life**(0.5)
 
 	c2 = (c2_ref/t) *  math.e**(-Eac2/Rug * (1/T - 1/T_ref)) \
 		* math.e**(alpha_c2 * F / Rug *(Voc/T - V_ref/T_ref)) \
@@ -307,7 +308,7 @@ def real_battery_degradation(t, N = 0, SOC = 1., i_rate = 11.5, T = 318, Dod_max
 
 	Qsites = c0 - c2 * t_life
 
-	Q_loss = min(Qli, Qsites)
+	Q_loss = min(Qli, Qsites)		# Q_loss is % degradation
 	# print(Qli, Qsites)
 
-	return Q_loss*360/1000		#Q_loss is in Ah, converting that to kWh
+	return Q_loss		
