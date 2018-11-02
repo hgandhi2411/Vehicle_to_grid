@@ -194,7 +194,6 @@ for s in state_list:
 				time_charging_stops = roundupTime(time_charging_stops)
 
 				#Charge the battery
-<<<<<<< HEAD
 				cost_charging, battery_charged[i], q_loss = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery, time_start = time_charging_starts, N = battery_cycles[i], time_stop = time_charging_stops, battery_left = battery - battery_used[i], timedelta=60) 
 				#q_loss is the relative capacity
 				q_deg[i] += battery * (1 - q_loss)
@@ -202,13 +201,12 @@ for s in state_list:
 				final_cdgdn[i] += battery * (1 - q_loss) * battery * bat_degradation * eff
 				final_charge_cost[i] += cost_charging
 				battery_cycles[i] += battery_used[i]/battery
-=======
+
 				cost_charging, battery_charged[i], q_loss = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery * (1 - q_deg[i]), time_start = time_charging_starts, N = battery_cycles[i], time_stop = time_charging_stops, battery_left = battery - battery_used[i], timedelta=60) 
 				q_deg[i] += q_loss/100
 				cost_charging += q_deg[i] * bat_degradation * eff
 				final_cdgdn[i] += q_deg[i] * bat_degradation * eff
 				final_charge_cost[i] += cost_charging
->>>>>>> 60e472e... Eliminated abnormally high degradation occurrences
 				
 			#Cost of commute without V2G
 			charge_commute_stop = addtime(time_charging_starts, complete_charging_time*battery_used_for_travel/battery_commute)
@@ -218,10 +216,8 @@ for s in state_list:
 			cost_commute += battery * (1 - q_loss_commute) * battery_commute * bat_degradation * eff
 			final_commute_cdgdn += battery * (1 - q_loss_commute) * battery_commute * bat_degradation * eff
 			final_commute_cost += cost_commute
-<<<<<<< HEAD
-=======
+
 			battery_commute = battery_commute * (1 - q_loss_commute/100)
->>>>>>> 60e472e... Eliminated abnormally high degradation occurrences
 
 			for i in range(Sample):
 				time_arrival_work[i] += dt.timedelta(days = 1)
