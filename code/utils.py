@@ -102,7 +102,7 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 	
 	if(state == 'charging'):
 		total_cost = np.zeros(a)
-		percent_deg = np.zeros(a)
+		deg = np.zeros(a)
 		if battery_left is None:
 			battery_charged = battery*(1-DoD)
 		else:
@@ -124,9 +124,9 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 								battery_charged[j] = battery[j]
 							soc = max(0.2, battery_charged[j]/battery[j])
 							if(n != -1):
-								percent_deg[j] += real_battery_degradation(t = (stop - start).seconds/60 - n*60, SOC = soc, N = N[j])
+								deg[j] += (1 - real_battery_degradation(t = 60 - n*60, SOC = soc, N = N[j]))
 							else:
-								percent_deg[j] += real_battery_degradation(t = (stop - start).seconds/60, SOC = soc, N = N[j])
+								deg[j] += (1 - real_battery_degradation(t = 60, SOC = soc, N = N[j]))
 							break
 						battery_charged[j] += charging_rate	#hourly
 						if (battery_charged[j] > battery[j]):
@@ -134,16 +134,16 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 						cost += charging_rate*eff*price[i]	#hourly
 						soc = max(0.2, battery_charged[j]/battery[j])
 						if(n != -1):
-							percent_deg[j] += real_battery_degradation(t = (time - start).seconds/60 - n*60, SOC = soc, N = N[j]) 
+							deg[j] += (1 - real_battery_degradation(t = 60 - n*60, SOC = soc, N = N[j])) 
 						else:
-							percent_deg[j] += real_battery_degradation(t = (stop - start).seconds/60, SOC = soc, N = N[j])
+							deg[j] += (1 - real_battery_degradation(t = 60, SOC = soc, N = N[j]))
 						# -n*60 to factor for the fact that time - start is cumulative
 						time += dt.timedelta(hours = 1)
 						n += 1
 						# print(cost)
 			total_cost[j] = cost
 		# print(percent_deg)
-		return total_cost, battery_charged, percent_deg
+		return total_cost, battery_charged, deg
 	
 	elif(state == 'discharging'):
 		total_cost = np.zeros(a)
@@ -315,6 +315,5 @@ def real_battery_degradation(t, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_ma
 	Qsites = c0 - c2 * t_life
 
 	Q_loss = min(Qli, Qsites)		# Q_loss is % degradation
-	# print(Qli, Qsites)
 
-	return Q_loss		
+	return min(max(Q_loss, 0), 1)
