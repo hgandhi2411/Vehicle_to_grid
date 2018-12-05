@@ -34,7 +34,7 @@ dist_one_kWh = np.array([rated_dist_dict[i] for i in battery])
 
 complete_charging_time = np.array([charge_time_dict[i] for i in battery])
 
-eff = 0.62 #roundtrip efficiency of Tesla S 
+eff = 0.78 #roundtrip efficiency of Tesla S 
 #reference: Shirazi, Sachs 2017
 DoD = 0.80   #depth of discharge
 
@@ -82,7 +82,7 @@ mask = {'Arizona': 'AZ',
 		'New York': 'NY', 
 		'Texas': 'TX'}
 print(dt.datetime.today().date())
-result_path = os.path.join(prefix, 'Results', str(dt.datetime.today().date()), 'var_bat')
+result_path = os.path.join(prefix, 'Realistic_model', 'Results', str(dt.datetime.today().date()))
 if not os.path.exists(result_path):
     # print('making a new dir!')
     os.makedirs(result_path)
@@ -151,6 +151,7 @@ for s in state_list:
 	battery_cycles = np.zeros((x, Sample))
 	q_deg = np.zeros((x, Sample))
 	q_loss_commute = np.zeros(Sample)
+	q_deg_commute = np.zeros(Sample)
 	commute_cycles = np.zeros(Sample)
 	k = 0
 	day = dt.datetime(2017,1,1,0,0)
@@ -196,28 +197,21 @@ for s in state_list:
 				#Charge the battery
 				cost_charging, battery_charged[i], q_loss = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery, time_start = time_charging_starts, N = battery_cycles[i], time_stop = time_charging_stops, battery_left = battery - battery_used[i], timedelta=60) 
 				#q_loss is the relative capacity
-				q_deg[i] += battery * (1 - q_loss)
+				q_deg[i] += q_loss
 				# cost_charging += q_loss/100 *battery * bat_degradation * eff
-				final_cdgdn[i] += battery * (1 - q_loss) * battery * bat_degradation * eff
+				final_cdgdn[i] += battery * q_loss * bat_degradation 
 				final_charge_cost[i] += cost_charging
 				battery_cycles[i] += battery_used[i]/battery
-
-				cost_charging, battery_charged[i], q_loss = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery * (1 - q_deg[i]), time_start = time_charging_starts, N = battery_cycles[i], time_stop = time_charging_stops, battery_left = battery - battery_used[i], timedelta=60) 
-				q_deg[i] += q_loss/100
-				cost_charging += q_deg[i] * bat_degradation * eff
-				final_cdgdn[i] += q_deg[i] * bat_degradation * eff
-				final_charge_cost[i] += cost_charging
 				
 			#Cost of commute without V2G
 			charge_commute_stop = addtime(time_charging_starts, complete_charging_time*battery_used_for_travel/battery_commute)
-			charge_commute_stop = rounddownTime(np.asarray(charge_commute_stop))
+			charge_commute_stop = roundupTime(np.asarray(charge_commute_stop))
 			cost_commute, battery_charged_commute, q_loss_commute = cost_calc(state = 'charging', dates= date_set, price = price_set, battery = battery_commute,  N = commute_cycles, time_start = time_charging_starts, time_stop = charge_commute_stop, battery_left = battery_commute - battery_used_for_travel) 
-			commute_cycles += battery_charged_commute/battery_commute
-			cost_commute += battery * (1 - q_loss_commute) * battery_commute * bat_degradation * eff
-			final_commute_cdgdn += battery * (1 - q_loss_commute) * battery_commute * bat_degradation * eff
+			commute_cycles += battery_used_for_travel/battery_commute
+			q_deg_commute += q_loss_commute
+			# cost_commute += battery * (1 - q_loss_commute) * bat_degradation * eff
+			final_commute_cdgdn += battery_commute *  q_loss_commute * bat_degradation 
 			final_commute_cost += cost_commute
-
-			battery_commute = battery_commute * (1 - q_loss_commute/100)
 
 			for i in range(Sample):
 				time_arrival_work[i] += dt.timedelta(days = 1)
@@ -239,16 +233,17 @@ for s in state_list:
 	Annual_savings = np.zeros((x,Sample))
 
 	for i in range(x):
-		Annual_savings[i] = final_discharge_cost[i] - final_charge_cost[i] - final_cdgdn[i] - (0.0 - final_commute_cost)
+		Annual_savings[i] = final_discharge_cost[i] - final_charge_cost[i] - final_cdgdn[i] - (0.0 - final_commute_cost - final_commute_cdgdn)
 
 	if not os.path.exists(os.path.join(result_path, s)):
 		os.makedirs(os.path.join(result_path, s))
 	output = os.path.join(result_path, s, 'savings.csv')
-	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'Commute_cost': final_commute_cost, 'Commute_cycles': commute_cycles, 'Q_loss_commute': q_loss_commute}
+	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'Commute_cost': final_commute_cost, 'Commute_cycles': commute_cycles, 'Q_loss_commute': q_deg_commute, 'Q_loss_cdgdn': final_commute_cdgdn}
 	results.update({'chcost{}'.format(a):b for a,b in zip(SP, final_charge_cost)})
 	results.update({'discost{}'.format(a):b for a,b in zip(SP, final_discharge_cost)})
 	results.update({'Savings{}'.format(a):b for a,b in zip(SP, Annual_savings)})
 	results.update({'cycles{}'.format(a):b for a,b in zip(SP, battery_cycles)})
 	results.update({'Q_loss{}'.format(a):b for a,b in zip(SP, q_deg)})
+	results.update({'cdgdn{}'.format(a):b for a,b in zip(SP, final_cdgdn)})
 	results = pd.DataFrame.from_dict(results)
 	results.to_csv(output)
