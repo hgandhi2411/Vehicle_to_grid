@@ -145,12 +145,12 @@ for s in state_list:
 	for i in range(Sample):
 		if i % 100 == 0:
 			print(i, dt.datetime.now() - start)
-		pricetaker_savings[s][year].append(-(profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)[0]))
+		pricetaker_savings[s].append(-(profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)[0]))
 
 		result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 25))
 
-		max_savings[s][year].append(-result.fun)
-		osp[s][year].append(result.x)
+		max_savings[s].append(-result.fun)
+		osp[s].append(result.x)
 
 		#_, discost, chcost, cdgdn, comcost, comdgdn, q_deg, q_deg_commute = profit(x= result.x, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
 		
