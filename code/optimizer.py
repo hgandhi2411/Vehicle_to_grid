@@ -46,10 +46,9 @@ charging_rate = 11.5
 lifecycles = 5300		#for lithium ion battery from Gerad's article
 energy_throughput = 2*lifecycles*battery*DoD 		#Ln.Es.DoD (kWh)
 
-battery_cost = pd.read_csv('Battery_cost.csv')
-battery_cap_cost = {a: b for a, b in zip(battery_cost.Year, battery_cost.Cost)}
+battery_cap_cost = 209
 # Nikolas Soulopoulos, Cost Projections - Battery, vehicles and TCO, BNEF, June 2018 Report
-
+bat_degradation = battery * battery_cap_cost/energy_throughput
 working_days = 250
 np.set_printoptions(precision = 2, threshold = np.inf)
 
@@ -97,8 +96,7 @@ for s in state_list:
 				time_sample.append(time[i])
 	
 	commute_dist, commute_time = dist_time_battery_correlated_sampling(dist = dist_sample, time = time_sample, ev_range = ev_range, N = Sample)
-	#sampling(data = dist_sample, N = Sample, data2=time_sample, correlated=True, check = ev_range)
-
+	
 	#Actual calculations of battery usage and selling
 	battery_used_for_travel = 2 * commute_dist/dist_one_kWh  #kWh
 	battery_left_to_sell = battery*DoD - battery_used_for_travel
@@ -149,8 +147,6 @@ for s in state_list:
 			print(i, dt.datetime.now() - start)
 		pricetaker_savings[s][year].append(-(profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)[0]))
 
-		# result = scipy.optimize.minimize(profit, x0=0.05, method = 'L-BFGS-B', args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i]), bounds=[(0, np.inf)])
-		# result = scipy.optimize.basinhopping(profit, x0=0.05, niter=20, stepsize=0.05, minimizer_kwargs=dict(args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i]), bounds=[(0, np.inf)]), niter_success=5)
 		result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 25))
 
 		max_savings[s][year].append(-result.fun)
