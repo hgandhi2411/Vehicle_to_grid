@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-
+import matplotlib as mlib
+mlib.use('Agg')
 import pandas as pd
 import numpy as np
 import os
 import math
 import matplotlib.pyplot as plt
-import matplotlib as mlib
 import datetime as dt
 import seaborn as sns
 from mpl_toolkits.mplot3d import Axes3D
@@ -27,11 +27,12 @@ rated_dist_dict, charge_time_dict = {}, {}
 for i in range(len(cars.Battery)):
 	rated_dist_dict[cars.Battery[i]] = cars.dist[i]
 	charge_time_dict[cars.Battery[i]] = cars.Charge_time[i]
+	range_dict[cars.Battery[i]] = cars.Range[i]
 battery = np.random.choice(cars.Battery, size = Sample, p = cars.prob)
 battery_commute = np.copy(battery)
 
+ev_range = np.array([range_dict[i] for i in battery]) 
 dist_one_kWh = np.array([rated_dist_dict[i] for i in battery])
-
 complete_charging_time = np.array([charge_time_dict[i] for i in battery])
 
 eff = 0.78 #roundtrip efficiency of Tesla S 
@@ -50,13 +51,13 @@ energy_throughput = 2*lifecycles*battery*DoD 		#Ln.Es.DoD (kWh)
 battery_cap_cost = 209	
 # Nikolas Soulopoulos, Cost Projections - Battery, vehicles and TCO, BNEF, June 2018 Report
 
-bat_degradation = battery * battery_cap_cost/energy_throughput			
+bat_degradation = battery * battery_cap_cost/energy_throughput	
 # using Gerad's equation, cb is the cost of current storage which will be introduced later.
 
 working_days = 250
 
 #For optimal scenario we need a set selling price
-SP = np.arange(0,0.51,0.01)		#$/kWh
+SP = np.arange(0,0.31,0.001)		#$/kWh
 x = len(SP)
 
 np.set_printoptions(precision = 2, threshold = np.inf)
@@ -102,7 +103,7 @@ for s in state_list:
 				dist_sample.append(dist[i])
 				time_sample.append(time[i])
 	
-	commute_dist, commute_time = sampling(data = dist_sample, N = Sample, data2=time_sample, correlated=True)
+	commute_dist, commute_time = dist_time_battery_correlated_sampling(dist = dist_sample, time= time, ev_range= ev_range, N = Sample)
 	
 	#Actual calculations of battery usage and selling
 	battery_used_for_travel = 2 * commute_dist/dist_one_kWh  #kWh
@@ -183,7 +184,7 @@ for s in state_list:
 			for i in range(x):
 				
 				#Start with discharging, assuming battery has been used to commute one way
-				cost_discharging, battery_sold = cost_calc(state = 'discharging', dates = date_set, price = price_set, battery = battery, time_start = time_discharge_starts,  N = battery_cycles[i], time_stop = None, daily_work_mins = daily_work_mins, set_SP = SP[i], battery_left = battery_charged[i] - battery_used_for_travel/2, timedelta = 60)
+				cost_discharging, battery_sold = cost_calc(state = 'discharging', dates = date_set, price = price_set, battery = battery, time_start = time_discharge_starts,  N = battery_cycles[i], time_stop = None, daily_work_mins = daily_work_mins, set_SP = SP[i], battery_left = battery_charged[i] - battery_used_for_travel/2, timedelta = 60, charging_rate = charging_rate, eff = eff)
 				final_discharge_cost[i] += cost_discharging
 				battery_used[i] = battery_sold + battery_used_for_travel
 
@@ -195,7 +196,7 @@ for s in state_list:
 				time_charging_stops = roundupTime(time_charging_stops)
 
 				#Charge the battery
-				cost_charging, battery_charged[i], q_loss = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery, time_start = time_charging_starts, N = battery_cycles[i], time_stop = time_charging_stops, battery_left = battery - battery_used[i], timedelta=60) 
+				cost_charging, battery_charged[i], q_loss = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery, time_start = time_charging_starts, N = battery_cycles[i], time_stop = time_charging_stops, battery_left = battery - battery_used[i], timedelta=60, charging_rate = charging_rate, eff = eff) 
 				#q_loss is the relative capacity
 				q_deg[i] += q_loss
 				# cost_charging += q_loss/100 *battery * bat_degradation * eff
@@ -206,7 +207,7 @@ for s in state_list:
 			#Cost of commute without V2G
 			charge_commute_stop = addtime(time_charging_starts, complete_charging_time*battery_used_for_travel/battery_commute)
 			charge_commute_stop = roundupTime(np.asarray(charge_commute_stop))
-			cost_commute, battery_charged_commute, q_loss_commute = cost_calc(state = 'charging', dates= date_set, price = price_set, battery = battery_commute,  N = commute_cycles, time_start = time_charging_starts, time_stop = charge_commute_stop, battery_left = battery_commute - battery_used_for_travel) 
+			cost_commute, battery_charged_commute, q_loss_commute = cost_calc(state = 'charging', dates= date_set, price = price_set, battery = battery_commute,  N = commute_cycles, time_start = time_charging_starts, time_stop = charge_commute_stop, battery_left = battery_commute - battery_used_for_travel, charging_rate = charging_rate, eff = eff) 
 			commute_cycles += battery_used_for_travel/battery_commute
 			q_deg_commute += q_loss_commute
 			# cost_commute += battery * (1 - q_loss_commute) * bat_degradation * eff

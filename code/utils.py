@@ -71,7 +71,7 @@ def rounddownTime(dtarray=None, roundTo=5*60):
 # 	return 
 
 
-def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, daily_work_mins = None, set_SP = 0, battery_left = None, timedelta = 60):
+def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, daily_work_mins = None, set_SP = 0, battery_left = None, timedelta = 60, charging_rate = 11.5, eff = 0.78):
 	'''This function will calculate the cost of electricity for based on the state -discharging or charging
 		Args: state = 'charging' or 'discharging'
 			dates = The time stamps for the data used (otype- array)
@@ -91,10 +91,8 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 					percent_deg  = percentage degradation
 	'''
 	Sample = 2559
-	eff = 0.62 #roundtrip efficiency of Tesla S 
-	#reference: Shirazi, Sachs 2017
 	DoD = 0.90   #depth of discharge
-	charging_rate = 11.5
+	
 	a = len(time_start)
 	time_start = rounddownTime(time_start, roundTo= 60*60)
 	if type(battery) == int:
@@ -124,9 +122,9 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 								battery_charged[j] = battery[j]
 							soc = max(0.2, battery_charged[j]/battery[j])
 							if(n != -1):
-								deg[j] += (1 - real_battery_degradation(t = 60 - n*60, SOC = soc, N = N[j]))
+								deg[j] = (1 - real_battery_degradation(t = 60 - n*60, SOC = soc, N = N[j]))
 							else:
-								deg[j] += (1 - real_battery_degradation(t = 60, SOC = soc, N = N[j]))
+								deg[j] = (1 - real_battery_degradation(t = 60, SOC = soc, N = N[j]))
 							break
 						battery_charged[j] += charging_rate	#hourly
 						if (battery_charged[j] > battery[j]):
@@ -134,9 +132,9 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 						cost += charging_rate*eff*price[i]	#hourly
 						soc = max(0.2, battery_charged[j]/battery[j])
 						if(n != -1):
-							deg[j] += (1 - real_battery_degradation(t = 60 - n*60, SOC = soc, N = N[j])) 
+							deg[j] = (1 - real_battery_degradation(t = 60 - n*60, SOC = soc, N = N[j])) 
 						else:
-							deg[j] += (1 - real_battery_degradation(t = 60, SOC = soc, N = N[j]))
+							deg[j] = (1 - real_battery_degradation(t = 60, SOC = soc, N = N[j]))
 						# -n*60 to factor for the fact that time - start is cumulative
 						time += dt.timedelta(hours = 1)
 						n += 1
@@ -191,71 +189,29 @@ def create_dict(file_data, bins = 'auto'):
 	keys = np.asarray(list(file_dict.keys()))
 	return values, keys
 
-def sampling(data, N, data2 = None, correlated = False, p = None, mask = None, index = None):
+def dist_time_battery_correlated_sampling(dist, time, ev_range, N):
 	'''Sample from data for a given sample size N
 		Args: 
-			data: The array to sample from (otype - array)
+			dist, time: The arrays to sample from (otype - array)
+			ev_range: array of length N, This is used to check that range of battery size is capable of handling commute distance sampled.
 			N: desired sample size
-			data2: This array is required if correlated is True
-			p: probability of elements in data, length must be equal to data (otype - array)
-			mask: A string or number that should be used to filter data. 
-			index: An array of indices used to filter data instead of mask.Indices will over-ride mask.
+			state_mask: A string or number that should be used to filter data. 
 		Returns:
 			sampled_data: New array of randomly sampled elements. If correlated is True, then this returns a tuple of arrays.'''
-	data = np.array(data)
-	if correlated:
-		assert(data2 is not None), 'Data is correlated, please input two arrays'
-		data2 = np.array(data2)
-		if mask is None and index is None:
-			if p is None:
-				p = np.asarray([1.0/len(data)]*len(data))
-			sampled_indices = np.random.choice(np.arange(len(data)), size = N, p = p)
-		else:
-			if index is not None:
-				index = index
-			elif mask is not None:		
-				index = data == ([mask]*len(data))
-			new_data = data[index]
-			p = np.asarray([1/len(new_data)]*len(new_data))
-			sampled_indices = np.random.choice(np.arange(len(new_data)), size = N, p = p)
-		sampled_data = data[sampled_indices]
-		sampled_data2 = data2[sampled_indices]
-		return (sampled_data, sampled_data2)
-	else:	
-		if mask is None and index is None:
-			if p is None:
-				p = np.asarray([1/len(data)]*len(data)) 
-			sampled_data = np.random.choice(data, size = N, p = p)
-		else:
-			if index is not None:
-				index = index
-			elif mask is not None:		
-				index = data == [mask]*len(data)
-			new_data = data[index]
-			p = np.asarray([1/len(new_data)]*len(new_data))
-			sampled_data = np.random.choice(new_data, size = N, p = p)
-		return sampled_data
-		
 
-def plot_histogram(data, bins = 10, xlabel = None, ylabel = None, yticks = None, xticks = None, title = None, save_to = None, ci95 = False, text = None, xtext = None, ytext = None):
-	''' Make a histogram of the data in mpl'''
-	plt.figure(figsize=(10, 8))
-	plt.hist(data, bins = bins)
-	plt.xlabel('{}'.format(xlabel))
-	plt.ylabel('{}'.format(ylabel))
-	plt.title('{}'.format(title))
-	if ci95:
-		y = np.percentile(data, (2.5, 95), axis = 0)
-		plt.axvline(y[0], lw = 1, color = 'orange')
-		plt.axvline(y[1], lw = 1, color = 'orange')
-	if text is not None:
-		assert(xtext is not None and ytext is not None), 'Please specify text location'
-		plt.text(xtext, ytext, '{}'.format(text) )
-	plt.tight_layout()
-	if save_to is not None:
-		plt.savefig('{}'.format(save_to))
-	else:
-		plt.show()
+	p = np.asarray([1/len(dist)]*len(dist))
+	length = len(dist)
+	x = 1000
+	sampled_dist = np.zeros(N)
+	sampled_time = np.zeros(N)
+	for i in range(N):
+		while(2 * x >= ev_range[i]):
+			ind = np.random.choice(np.arange(length), p = p)
+			x = dist[ind]
+		sampled_dist[i] = x
+		sampled_time[i] = time[ind]
+		x = 1000
+	return sampled_dist, sampled_time
 
 def real_battery_degradation(t, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.8):
 	''' This function calculates the percentage of battery degradation happening at every time step for NCA li-ion chemistry
