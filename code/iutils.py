@@ -69,7 +69,7 @@ def rounddownTime(time=None, roundTo=5*60):
 # 	return 
 
 
-def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, daily_work_mins = None, set_SP = 0, battery_left = None, timedelta = 60, charging_rate = 11.5, eff = 0.78):
+def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, daily_work_mins = None, set_SP = 0, battery_left = None, timedelta = 60, charging_rate = 11.5, eff = 0.78, DoD = 0.9):
 	'''This function will calculate the cost of electricity for based on the state -discharging or charging
 		Args: state = 'charging' or 'discharging'
 			dates = The time stamps for the data used (otype- array)
@@ -88,7 +88,6 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 					battery_charged = battery charged
 					percent_deg  = percentage degradation
 	'''
-	DoD = 0.90   #depth of discharge
 	time_start = rounddownTime(time_start, roundTo= 60*60)
 	
 	if(state == 'charging'):

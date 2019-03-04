@@ -17,7 +17,7 @@ prefix = ''
 
 # prefix = os.path.join(os.path.expanduser('~'),'Documents', 'Heta', 'White lab', 'Vehicle_to_grid')
 
-Sample = 2813   #total EVs in NYC Sept2018
+Sample = 100   #total EVs in NYC Sept2018
 #Source: https://www.nyserda.ny.gov/All-Programs/Programs/ChargeNY/Support-Electric/Map-of-EV-Registrations
 
 cars = pd.read_csv(os.path.join(prefix,'Cars.csv'), delimiter= ',')
@@ -33,11 +33,11 @@ ev_range = np.array([range_dict[i] for i in battery])
 dist_one_kWh = np.array([rated_dist_dict[i] for i in battery])
 complete_charging_time = np.array([charge_time_dict[i] for i in battery])
 
-eff = 0.78 #roundtrip efficiency of Tesla S 
+efficiency = [0.78, 0.95, 0.99] #roundtrip efficiency of Tesla S 
 #reference: Shirazi, Sachs 2017
-DoD = 0.80   #depth of discharge
+DoD = 0.90   #depth of discharge
 
-charging_rate = 11.5
+charging_rates = [11.5, 25, 50, 75,100]
 # Considering AC Level2 Charging using SAE J1772 (240V/80A), standard on board chargers are 
 # capable of delivering 48A with the high amperage version being able to deliver 72A - tesla.com
 # Super charger gives 17.2 kWh/hr charging rate
@@ -138,22 +138,34 @@ for s in state_list:
 
 	data_file = os.path.join(result_path, '{}.csv'.format(s))
 	
-	pricetaker_savings[s] = []
-	max_savings[s] = []
-	osp[s] = []
+	pricetaker_savings[s] = {}
+	max_savings[s] = {}
+	osp[s] = {}
 
-	for i in range(Sample):
-		if i % 100 == 0:
-			print(i, dt.datetime.now() - start)
-		pricetaker_savings[s][year].append(-(profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)[0]))
+	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery} 
+	
+	for eff in efficiency:
+		pricetaker_savings[s][eff] = {}
+		max_savings[s][eff] = {}
+		osp[s][eff] = {}
+		for charging_rate in charging_rates:
+			pricetaker_savings[s][eff][charging_rate] = []
+			max_savings[s][eff][charging_rate] = []
+			osp[s][eff][charging_rate] = []
+			for i in range(Sample):
+				if i % 100 == 0:
+					print(i, eff, charging_rate, dt.datetime.now() - start)
+				pricetaker_savings[s][eff][charging_rate].append(-(profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)[0]))
 
-		result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 25))
+				result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 25))
 
-		max_savings[s][year].append(-result.fun)
-		osp[s][year].append(result.x)
+				max_savings[s][eff][charging_rate].append(-result.fun)
+				osp[s][eff][charging_rate].append(result.x)
 
-		#_, discost, chcost, cdgdn, comcost, comdgdn, q_deg, q_deg_commute = profit(x= result.x, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
+				#_, discost, chcost, cdgdn, comcost, comdgdn, q_deg, q_deg_commute = profit(x= result.x, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
 		
-	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'OSP_Savings': max_savings, 'OSP': osp, 'Pricetaker_Savings': pricetaker_savings}
+		results.update({'OSP_Savings_eff{}_rc{}'.format(eff, x): y for x,y in zip(max_savings[s][eff].keys(), max_savings[s][eff].values())})
+		results.update({'OSP_eff{}_rc{}'.format(eff, x): y for x,y in zip(osp[s][eff].keys(), osp[s][eff].values())})
+		results.update({'PT_Savings_eff{}_rc{}'.format(eff, x): y for x,y in zip(pricetaker_savings[s][eff].keys(), pricetaker_savings[s][eff].values())})
 	results = pd.DataFrame.from_dict(results)
 	results.to_csv(data_file)
