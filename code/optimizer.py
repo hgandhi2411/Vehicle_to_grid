@@ -33,7 +33,7 @@ ev_range = np.array([range_dict[i] for i in battery])
 dist_one_kWh = np.array([rated_dist_dict[i] for i in battery])
 complete_charging_time = np.array([charge_time_dict[i] for i in battery])
 
-eff = 0.78 # one-way efficiency of Tesla S 
+eff = 0.78 #roundtrip efficiency of Tesla S 
 #reference: Shirazi, Sachs 2017
 DoD = 0.80   #depth of discharge
 
@@ -97,6 +97,7 @@ for s in state_list:
 				time_sample.append(time[i])
 	
 	commute_dist, commute_time = dist_time_battery_correlated_sampling(dist = dist_sample, time = time_sample, ev_range = ev_range, N = Sample)
+	#sampling(data = dist_sample, N = Sample, data2=time_sample, correlated=True, check = ev_range)
 
 	#Actual calculations of battery usage and selling
 	battery_used_for_travel = 2 * commute_dist/dist_one_kWh  #kWh
@@ -139,32 +140,24 @@ for s in state_list:
 
 	data_file = os.path.join(result_path, '{}.csv'.format(s))
 	
-	pricetaker_savings[s] = {}
-	max_savings[s] = {}
-	osp[s] = {}
+	pricetaker_savings[s] = []
+	max_savings[s] = []
+	osp[s] = []
 
-	for year in battery_cap_cost.keys():
-		bat_degradation = battery * battery_cap_cost[year]/energy_throughput
-		# using Gerad's equation, cb is the cost of current storage which will be introduced later.
-		pricetaker_savings[s][year] = []
-		max_savings[s][year] = []
-		osp[s][year] = []
+	for i in range(Sample):
+		if i % 100 == 0:
+			print(i, dt.datetime.now() - start)
+		pricetaker_savings[s][year].append(-(profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)[0]))
 
-		for i in range(Sample):
-			if i % 100 == 0:
-				print(i, dt.datetime.now() - start)
-			pricetaker_savings[s][year].append(-(profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)[0]))
+		# result = scipy.optimize.minimize(profit, x0=0.05, method = 'L-BFGS-B', args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i]), bounds=[(0, np.inf)])
+		# result = scipy.optimize.basinhopping(profit, x0=0.05, niter=20, stepsize=0.05, minimizer_kwargs=dict(args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i]), bounds=[(0, np.inf)]), niter_success=5)
+		result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 25))
 
-			result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 25))
+		max_savings[s][year].append(-result.fun)
+		osp[s][year].append(result.x)
 
-			max_savings[s][year].append(-result.fun)
-			osp[s][year].append(result.x)
-
-			#_, discost, chcost, cdgdn, comcost, comdgdn, q_deg, q_deg_commute = profit(x= result.x, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
+		#_, discost, chcost, cdgdn, comcost, comdgdn, q_deg, q_deg_commute = profit(x= result.x, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
 		
-	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery}
-	results.update({'OSP_Savings_{}'.format(x): y for x,y in zip(max_savings[s].keys(), max_savings[s].values())})
-	results.update({'OSP_{}'.format(x): y for x,y in zip(osp[s].keys(), osp[s].values())})
-	results.update({'PT_Savings_{}'.format(x): y for x,y in zip(pricetaker_savings[s].keys(), pricetaker_savings[s].values())})
+	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'OSP_Savings': max_savings, 'OSP': osp, 'Pricetaker_Savings': pricetaker_savings}
 	results = pd.DataFrame.from_dict(results)
 	results.to_csv(data_file)
