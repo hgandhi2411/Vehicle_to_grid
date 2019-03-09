@@ -76,6 +76,7 @@ def cost_calc(state, dates, price,
 			price = Cost of electricity at the given time stamps from data (otype - array)
 			battery = The maximum battery capacity for users, length must be equal to sample size (otype - float)
 			time_start = start of the time interval for which cost of electricity needs to be calculated (otype - datetime.datetime object)
+			N = Number of cycles battery has gone through
 			time_stop = end of interval which started, default = None (otype - datetime.datetime object)
 			daily_work_mins = An array of working hours of users (otype - int)
 			set_SP = The selling price set  by the user, default = 0
@@ -92,13 +93,14 @@ def cost_calc(state, dates, price,
 	time_start = round_dt_down(time_start, minutes = 60)
 
 	if(state == 'charging'):
+		if time_stop is None:
+			raise ValueError()
 		total_cost = 0
 		deg = 0
 		if battery_left is None:
 			battery_charged = battery*(1-DoD)
 		else:
 			battery_charged = battery_left
-		start = time_start
 		time = time_start
 		stop = time_stop
 		for i in range(len(dates)):
@@ -106,7 +108,6 @@ def cost_calc(state, dates, price,
 			if(dates[i] == time):
 				if((battery_charged <= battery) and (time < stop)):
 					if((stop - time).total_seconds() / 60 < 60):
-						# 5 minute window for the owner to come and start his vehicle
 						total_cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60) / 60
 						battery_charged += charging_rate * ((stop - time).seconds / 60) / 60
 						if(battery_charged > battery):
@@ -134,6 +135,8 @@ def cost_calc(state, dates, price,
 		return total_cost, battery_charged, deg
 
 	elif(state == 'discharging'):
+		if daily_work_mins is None:
+			raise ValueError()
 		total_cost = 0
 		battery_sold = 0
 		if battery_left is None:
@@ -204,7 +207,6 @@ def real_battery_degradation(t, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_ma
 	Args:
 		t : time in minutes (time_step of operation)
 		N : cycle number, default = 0, no cycling
-		battery_capacity : maximum battery capacity of the EV in kW, default = 60 kW
 		DoD : depth of discharge, default = 0.9
 		i_rate : charging/discharging rate of the battery, default = 11.5 kWh = 11500/360 = 31.78 Ah
 		T : battery temperature in Kelvin, default = 318K

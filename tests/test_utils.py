@@ -69,3 +69,29 @@ def test_cost_calc_discharging():
     #total money
     money = sum(prices) * charging_rate
     assert result[0] == money
+
+def test_cost_calc_charging():
+    #all day discharge
+    state = 'charging'
+    #price is always 1
+    dates = [dt.datetime(1,1,1,x) for x in range(24)]
+    prices = [1 for _ in dates]
+    #huge battery
+    battery = 10000
+    #start right away
+    time_start = dt.datetime(1,1,1,0)
+    #no cycles
+    N = 0
+    #working hours
+    daily_work_mins = 24 * 60
+    #charging rate in Energy / seconds?
+    charging_rate = 1
+    result = utils.cost_calc(state, dates, prices, battery,
+                             time_start, N,
+                             daily_work_mins=daily_work_mins,
+                             charging_rate=charging_rate,
+                             time_stop = dates[-1] + dt.timedelta(minutes=60),
+                             eff = 1)
+    #total money
+    money = sum(prices) * charging_rate
+    assert result[0] == money
