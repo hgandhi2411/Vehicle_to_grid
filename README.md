@@ -1,8 +1,7 @@
 ### Set-up Virtual Environment for Testing
 
-
-Run the following once:
-``sh
+To set-up with a virtual environment, run the following once:
+```sh
 pip install --user virtualenv
 cd /path/to/code
 virtualenv venv
@@ -16,9 +15,14 @@ source venv/bin/activate
 #when done
 deactivate
 ```
+### Set-up without virtual environment
+
+To install normally, just run `pip install -e .` from the 
+root directory.
 
 ### Running Tests
-To run tests with coverage: `pytest --cov=v2g`
+To run tests with coverage run `pytest --cov=v2g` from the root directory.
 
 ### Running optimzer
-Run `v2g-optimize` in any directory after installing
+Run `v2g-optimize` in any directory after installing to use the optimzer.
+
