@@ -1,0 +1,2 @@
+[run]
+omit=v2g/optimizer.py

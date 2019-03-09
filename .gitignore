@@ -8,6 +8,10 @@ PC
 Population_data
 Linear_model
 Realistic_model
+venv
+.pytest_cache
+v2g.egg-info
+
 
 *.xlsx
 *.zip
