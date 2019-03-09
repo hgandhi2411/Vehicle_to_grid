@@ -67,5 +67,5 @@ def test_cost_calc_discharging():
                              charging_rate=charging_rate,
                              eff = 1)
     #total money
-    money = sum(prices) * charging_rate * 60
+    money = sum(prices) * charging_rate
     assert result[0] == money

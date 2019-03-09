@@ -105,7 +105,7 @@ def cost_calc(state, dates, price,
 			n = -1
 			if(dates[i] == time):
 				if((battery_charged <= battery) and (time < stop)):
-					if((stop - time).seconds / 60 < 60):
+					if((stop - time).total_seconds() / 60 < 60):
 						# 5 minute window for the owner to come and start his vehicle
 						total_cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60) / 60
 						battery_charged += charging_rate * ((stop - time).seconds / 60) / 60
@@ -147,10 +147,9 @@ def cost_calc(state, dates, price,
 		for i in range(len(dates)):
 			if(dates[i] == time):
 				if((price[i] >= set_SP) and (battery_sold <= battery_left) and (time < stop)):
-					if((stop - time).seconds / 60 < 60):
-						# 5 minute window for the owner to come and start his vehicle
-						money_earned += charging_rate * eff * price[i] * ((stop - time).seconds / 60 - 5) / 60
-						battery_sold += charging_rate * ((stop - time).seconds / 60 - 5) / 60
+					if((stop - time).total_seconds() / 60 < 60):
+						money_earned += charging_rate * eff * price[i] * ((stop - time).seconds / 60 ) / 60
+						battery_sold += charging_rate * ((stop - time).seconds / 60 ) / 60
 						break
 					battery_sold += charging_rate
 					money_earned += charging_rate*eff*price[i]
@@ -160,7 +159,6 @@ def cost_calc(state, dates, price,
 						break
 		total_cost = money_earned
 		return total_cost, battery_sold
-
 	else:
 		raise ValueError('Unknown state ' + state)
 
