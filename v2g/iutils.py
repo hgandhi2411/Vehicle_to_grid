@@ -26,7 +26,7 @@ def state_pop(state):
     return os.path.join('Population_data', pop_files[state]), os.path.join('LBMP', LBMP_file[state])
 
 
-def addtime(array = None, minutes = [0]):
+def add_time(array = None, minutes = [0]):
 	''' This function adds the given time in minutes to the array elementwise
 		Args: array of datetimes : The array to which time has to be added
 		minutes : integer or array of integer for minutes to be added
@@ -39,36 +39,37 @@ def addtime(array = None, minutes = [0]):
 	else:
 		return array + dt.timedelta(minutes=int(minutes))
 
-#www.stackoverflow.com/questions/3463930/how-to-round-the-minute-of-a-datetime-object-python
-def roundupTime(time=None, roundTo=5*60):
-	'''Round a datetime object to any time laps in seconds
-	Args: time : datetime.datetime object.
-		roundTo : Closest number of seconds to round to, default 5 minutes.
-	return: time : Rounded time to next 5 minutes for each element of the array
+def round_dt_up(time, minutes=5, hours=1):
+	'''Round up (ceil) to the nearest given time increment
+	Args:
+		time (datetime object): time to round up
+		minutes (integer): nearest minute to round up to
+		hours (integer): nearest hour to round up to
+	Returns (datetime object): rounded time
 	'''
-	seconds = (time - dt.datetime.min).seconds
-	rounding = (seconds+roundTo) // roundTo * roundTo
-	time = time + dt.timedelta(0, rounding-seconds, -time.microsecond)
-	return time
+	#rounds up to nearest y
+	rounder = lambda x,y: (y - x % y) * (x % y != 0)
+	return time + dt.timedelta(minutes=rounder(time.minute,minutes),
+							   hours=rounder(time.hour, hours))
 
-def rounddownTime(time=None, roundTo=5*60):
-	'''Round a datetime object to any time laps in seconds
-	Args: time : datetime.datetime object.
-		roundTo : Closest number of seconds to round to, default 5 minutes.
-	return: time : Rounded time to 5 minutes before for each element of the array
+
+def round_dt_down(time, minutes=5, hours=1):
+	'''Round down (floor) to the nearest given time increment
+	Args:
+		time (datetime object): time to round down
+		minutes (integer): nearest minute to round down to
+		hours (integer): nearest hour to round down to
+	Returns (datetime object): rounded time
 	'''
-	seconds = (time - time.min).seconds
-	rounding = (seconds) // roundTo * roundTo
-	time = time + dt.timedelta(0, rounding-seconds, -time.microsecond)
-	return time
-
-# def makeDir(prefix, target=None):
-# 	if not os.path.exists(os.path.join(prefix, target)):
-# 		os.makedirs(os.path.join(prefix, target))
-# 	return
+	return time - dt.timedelta(minutes=time.minute % minutes,
+                             hours=time.hour % hours)
 
 
-def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, daily_work_mins = None, set_SP = 0, battery_left = None, timedelta = 60, charging_rate = 11.5, eff = 0.78):
+def cost_calc(state, dates, price,
+			  battery, time_start, N,
+			  time_stop = None, daily_work_mins = None, set_SP = 0,
+			  battery_left = None, timedelta = 60, charging_rate = 11.5,
+			  eff = 0.78):
 	'''This function will calculate the cost of electricity for based on the state -discharging or charging
 		Args: state = 'charging' or 'discharging'
 			dates = The time stamps for the data used (otype- array)
@@ -88,7 +89,7 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 					percent_deg  = percentage degradation
 	'''
 	DoD = 0.90   #depth of discharge
-	time_start = rounddownTime(time_start, roundTo= 60*60)
+	time_start = round_dt_down(time_start, minutes = 60)
 
 	if(state == 'charging'):
 		total_cost = 0
@@ -141,13 +142,13 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 			total_cost = 0
 			battery_sold = 0
 		time = time_start
-		stop = rounddownTime(time + dt.timedelta(minutes = daily_work_mins), roundTo = 60 * timedelta)
+		stop = round_dt_down(time + dt.timedelta(minutes = daily_work_mins), minutes = timedelta)
 		money_earned = 0
 		for i in range(len(dates)):
 			if(dates[i] == time):
 				if((price[i] >= set_SP) and (battery_sold <= battery_left) and (time < stop)):
 					if((stop - time).seconds / 60 < 60):
-					# 5 minute window for the owner to come and start his vehicle
+						# 5 minute window for the owner to come and start his vehicle
 						money_earned += charging_rate * eff * price[i] * ((stop - time).seconds / 60 - 5) / 60
 						battery_sold += charging_rate * ((stop - time).seconds / 60 - 5) / 60
 						break
@@ -161,7 +162,7 @@ def cost_calc(state, dates, price, battery, time_start, N, time_stop = None, dai
 		return total_cost, battery_sold
 
 	else:
-		return None
+		raise ValueError('Unknown state ' + state)
 
 def create_dict(file_data, bins = 'auto'):
 	''' This function will create a dictionary of values and occurences by histograming given array
@@ -264,7 +265,7 @@ def real_battery_degradation(t, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_ma
 
 
 def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate = 11.5, eff=0.78):
-	time_arrival_work = roundupTime(time_arrival_work)
+	time_arrival_work = round_dt_up(time_arrival_work)
 	final_discharge_cost = 0
 	final_charge_cost = 0
 	final_cdgdn = 0
@@ -300,7 +301,7 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			date_set = np.asarray([i for i in dates[k:k+24*3]])
 			price_set = np.asarray([i for i in price[k:k+24*3]])
 			battery_used = 0
-			time_discharge_starts = roundupTime(time_arrival_work)
+			time_discharge_starts = round_dt_up(time_arrival_work)
 
 			#Start with discharging, assuming battery has been used to commute one way
 			cost_discharging, battery_sold = cost_calc(state = 'discharging', dates = date_set, price = price_set, battery = battery, time_start = time_discharge_starts,  N = battery_cycles, time_stop = None, daily_work_mins = daily_work_mins, set_SP = x, battery_left = battery_charged - battery_used_for_travel/2, timedelta = 60, charging_rate=charging_rate, eff = eff)
@@ -308,11 +309,11 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			battery_used = battery_sold + battery_used_for_travel
 
 			#Fast forward time to when charging should start
-			time_leaving_work = addtime(time_arrival_work, daily_work_mins)
-			time_reach_home = addtime(time_leaving_work, commute_time)
-			time_charging_starts = roundupTime(time_reach_home)
-			time_charging_stops = addtime(time_charging_starts, complete_charging_time*battery_used/battery)
-			time_charging_stops = roundupTime(time_charging_stops)
+			time_leaving_work = add_time(time_arrival_work, daily_work_mins)
+			time_reach_home = add_time(time_leaving_work, commute_time)
+			time_charging_starts = round_dt_up(time_reach_home)
+			time_charging_stops = add_time(time_charging_starts, complete_charging_time*battery_used/battery)
+			time_charging_stops = round_dt_up(time_charging_stops)
 
 			#Charge the battery
 			cost_charging, battery_charged, q_loss = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery, time_start = time_charging_starts, N = battery_cycles, time_stop = time_charging_stops, battery_left = battery - battery_used, timedelta=60, charging_rate=charging_rate, eff = eff)
@@ -324,8 +325,8 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			battery_cycles += battery_used/battery
 
 			#Cost of commute without V2G
-			charge_commute_stop = addtime(time_charging_starts, complete_charging_time*battery_used_for_travel/battery_commute)
-			charge_commute_stop = roundupTime(charge_commute_stop)
+			charge_commute_stop = add_time(time_charging_starts, complete_charging_time*battery_used_for_travel/battery_commute)
+			charge_commute_stop = round_dt_up(charge_commute_stop)
 			cost_commute, battery_charged_commute, q_loss_commute = cost_calc(state = 'charging', dates= date_set, price = price_set, battery = battery_commute,  N = commute_cycles, time_start = time_charging_starts, time_stop = charge_commute_stop, battery_left = battery_commute - battery_used_for_travel, charging_rate=charging_rate, eff = eff)
 			commute_cycles += battery_used_for_travel/battery_commute
 			q_deg_commute += q_loss_commute

@@ -122,7 +122,7 @@ for s in state_list:
 	for i in range(len(time_leave_home)):
 		time_depart_from_home.append(dt.datetime(2017,1,1,time_leave_home[i].hour, time_leave_home[i].minute, 0))
 
-	time_arrival_work = addtime(np.asarray(time_depart_from_home), commute_time)
+	time_arrival_work = add_time(np.asarray(time_depart_from_home), commute_time)
 
 	#sampling work daily work hrs for different people
 	work_hrs_per_week = np.genfromtxt(os.path.join(prefix, pop_file), delimiter = ',', filling_values = 0, skip_header = 1, usecols = (71), dtype = None)
