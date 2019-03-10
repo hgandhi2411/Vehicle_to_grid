@@ -1,6 +1,7 @@
 import v2g.iutils as utils
 import datetime as dt
 import numpy as np
+import pytest
 
 def test_add_time_arrayint():
     array = [dt.datetime(2000, 1, 1, 2)]
@@ -104,3 +105,21 @@ def test_create_dict():
     np.testing.assert_equal(keys, range(5))
     #zeros are not accounted for in create_dict
     np.testing.assert_equal(values[1:], 2*np.ones(4))
+
+def test_dist_time_battery_sampling():
+    # distance
+    dist = [i*3 for i in range(1, 6)]
+    # commute time
+    time = dist*2
+    #sample size
+    N = 10
+    # range of EVs - fixed at 30
+    ev_range = np.ones(N) * 30
+    result = utils.dist_time_battery_correlated_sampling(dist, time, ev_range, N = N)
+    #Make sure the sample size is right
+    assert len(result[0]) == N
+    assert len(result[1]) == N
+    #Make sure distance is less than range
+    assert (result[0] * 2 < ev_range).all()
+    #Make sure value error is raised if size ev_range is not N
+    pytest.raises(ValueError, utils.dist_time_battery_correlated_sampling, *(dist, time, ev_range[:10], 20))

@@ -188,6 +188,8 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N):
 		Returns:
 			sampled_data: New array of randomly sampled elements. If correlated is True, then this returns a tuple of arrays.'''
 
+	if len(ev_range) != N:
+		raise ValueError('Size of ev_range must equal N')
 	p = np.asarray([1/len(dist)]*len(dist))
 	length = len(dist)
 	x = 1000
