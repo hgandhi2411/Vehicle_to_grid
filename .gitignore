@@ -12,7 +12,7 @@ venv
 .pytest_cache
 v2g.egg-info
 
-
+.cache
 *.xlsx
 *.zip
 *.pyc

@@ -1,5 +1,6 @@
 import v2g.iutils as utils
 import datetime as dt
+import numpy as np
 
 def test_add_time_arrayint():
     array = [dt.datetime(2000, 1, 1, 2)]
@@ -91,7 +92,15 @@ def test_cost_calc_charging():
                              daily_work_mins=daily_work_mins,
                              charging_rate=charging_rate,
                              time_stop = dates[-1] + dt.timedelta(minutes=60),
-                             eff = 1)
+                             eff = 1, DoD = 0.90)
     #total money
     money = sum(prices) * charging_rate
     assert result[0] == money
+
+def test_create_dict():
+    #test data
+    data = np.array([i//2 for i in range(10)])
+    values, keys = utils.create_dict(data, bins = range(6))
+    np.testing.assert_equal(keys, range(5))
+    #zeros are not accounted for in create_dict
+    np.testing.assert_equal(values[1:], 2*np.ones(4))

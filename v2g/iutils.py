@@ -69,19 +69,20 @@ def cost_calc(state, dates, price,
 			  battery, time_start, N,
 			  time_stop = None, daily_work_mins = None, set_SP = 0,
 			  battery_left = None, timedelta = 60, charging_rate = 11.5,
-			  eff = 0.78):
+			  eff = 0.78, DoD = 0.90):
 	'''This function will calculate the cost of electricity for based on the state -discharging or charging
 		Args: state = 'charging' or 'discharging'
 			dates = The time stamps for the data used (otype- array)
 			price = Cost of electricity at the given time stamps from data (otype - array)
 			battery = The maximum battery capacity for users, length must be equal to sample size (otype - float)
 			time_start = start of the time interval for which cost of electricity needs to be calculated (otype - datetime.datetime object)
-			N = Number of cycles battery has gone through
+			N = Number of cycles battery has experienced
 			time_stop = end of interval which started, default = None (otype - datetime.datetime object)
 			daily_work_mins = An array of working hours of users (otype - int)
 			set_SP = The selling price set  by the user, default = 0
 			battery_left = The battery left for user, default = None
 			timedelta = The time interval considered for LBMP(hourly or five-minutes), in minutes, default = 60
+			DoD = The depth of discharge for the battery, default = 0.90
 		return: total_cost,
 				If state = 'discharging'
 					battery_sold = battery sold for V2G
@@ -89,7 +90,6 @@ def cost_calc(state, dates, price,
 					battery_charged = battery charged
 					percent_deg  = percentage degradation
 	'''
-	DoD = 0.90   #depth of discharge
 	time_start = round_dt_down(time_start, minutes = 60)
 
 	if(state == 'charging'):
@@ -114,9 +114,9 @@ def cost_calc(state, dates, price,
 							battery_charged = battery
 						soc = max(0.2, battery_charged/battery)
 						if(n != -1):
-							deg += (1 - real_battery_degradation(t = 60 - n*60, SOC = soc, N = N))
+							deg += (1 - real_battery_degradation(dt = 60 - n*60, SOC = soc, N = N))
 						else:
-							deg += (1 - real_battery_degradation(t = 60, SOC = soc, N = N))
+							deg += (1 - real_battery_degradation(dt = 60, SOC = soc, N = N))
 						break
 					battery_charged += charging_rate	#hourly
 					if (battery_charged > battery):
@@ -124,9 +124,9 @@ def cost_calc(state, dates, price,
 					total_cost += charging_rate*eff*price[i]	#hourly
 					soc = max(0.2, battery_charged/battery)
 					if(n != -1):
-						deg += (1 - real_battery_degradation(t = 60 - n*60, SOC = soc, N = N))
+						deg += (1 - real_battery_degradation(dt = 60 - n*60, SOC = soc, N = N))
 					else:
-						deg += (1 - real_battery_degradation(t = 60, SOC = soc, N = N))
+						deg += (1 - real_battery_degradation(dt = 60, SOC = soc, N = N))
 					# -n*60 to factor for the fact that time - start is cumulative
 					time += dt.timedelta(hours = 1)
 					n += 1
@@ -202,17 +202,17 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N):
 		x = 1000
 	return sampled_dist, sampled_time
 
-def real_battery_degradation(t, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.8):
+def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.8):
 	''' This function calculates the percentage of battery degradation happening at every time step for NCA li-ion chemistry
 	Args:
-		t : time in minutes (time_step of operation)
+		dt : time in minutes (time_step of operation)
 		N : cycle number, default = 0, no cycling
 		DoD : depth of discharge, default = 0.9
 		i_rate : charging/discharging rate of the battery, default = 11.5 kWh = 11500/360 = 31.78 Ah
 		T : battery temperature in Kelvin, default = 318K
 	Returns: float, total percentage loss in the battery capacity at given timestep timedelta
 	'''
-	t = t/24/60		#convert minutes to days
+	dt = dt/24/60		#convert minutes to days
 	V_nom = 360		#V Nominal voltage of EV batteries
 	#reference quantities
 	T_ref = 298.15 	# K
@@ -245,14 +245,14 @@ def real_battery_degradation(t, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_ma
 	Voc = a + b * (-math.log(SOC))**m + c * SOC + d * math.e**(n * (SOC - 1))
 
 	#integral over delta(tcyc) ignored because we are considering one time step
-	b1 = (b1_ref / t) * math.e**(-Eab1/Rug * (1/T - 1/T_ref)) \
+	b1 = (b1_ref / dt) * math.e**(-Eab1/Rug * (1/T - 1/T_ref)) \
 		* math.e**(alpha_b1 * F / Rug *(Voc/T - V_ref/T_ref)) \
 		* (((1 + Dod_max)/Dod_ref)**beta_b1)
 
 	b1 = max(0, b1)
 	Qli = b0 - b1*t_life**(0.5)
 
-	c2 = (c2_ref/t) *  math.e**(-Eac2/Rug * (1/T - 1/T_ref)) \
+	c2 = (c2_ref / dt) *  math.e**(-Eac2/Rug * (1/T - 1/T_ref)) \
 		* math.e**(alpha_c2 * F / Rug *(Voc/T - V_ref/T_ref)) \
 		* (N* (Dod_max/Dod_ref)**beta_c2)
 
