@@ -106,13 +106,14 @@ def cost_calc(state, dates, price,
 		for i in range(len(dates)):
 			n = -1
 			if(dates[i] == time):
-				if((battery_charged <= battery) and (time < stop)):
+				print(battery_charged, battery)
+				if((battery_charged < battery) and (time < stop)):
 					if((stop - time).total_seconds() / 60 < 60):
 						total_cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60) / 60
 						battery_charged += charging_rate * ((stop - time).seconds / 60) / 60
 						if(battery_charged > battery):
 							battery_charged = battery
-						soc = max(0.2, battery_charged/battery)
+						soc = battery_charged/battery
 						if(n != -1):
 							deg += (1 - real_battery_degradation(dt = 60 - n*60, SOC = soc, N = N))
 						else:
@@ -122,7 +123,7 @@ def cost_calc(state, dates, price,
 					if (battery_charged > battery):
 						battery_charged = battery
 					total_cost += charging_rate*eff*price[i]	#hourly
-					soc = max(0.2, battery_charged/battery)
+					soc = battery_charged/battery
 					if(n != -1):
 						deg += (1 - real_battery_degradation(dt = 60 - n*60, SOC = soc, N = N))
 					else:
@@ -149,7 +150,7 @@ def cost_calc(state, dates, price,
 		money_earned = 0
 		for i in range(len(dates)):
 			if(dates[i] == time):
-				if((price[i] >= set_SP) and (battery_sold <= battery_left) and (time < stop)):
+				if((price[i] >= set_SP) and (battery_sold < battery_left) and (time < stop)):
 					if((stop - time).total_seconds() / 60 < 60):
 						money_earned += charging_rate * eff * price[i] * ((stop - time).seconds / 60 ) / 60
 						battery_sold += charging_rate * ((stop - time).seconds / 60 ) / 60

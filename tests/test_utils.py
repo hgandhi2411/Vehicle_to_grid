@@ -84,21 +84,21 @@ def test_cost_calc_empty_battery():
     daily_work_mins = 24 * 60
     #charging rate in Energy / seconds?
     charging_rate = 1
-    result = utils.cost_calc('charging', dates, prices, 10e-10,
+    result = utils.cost_calc('charging', dates, prices, 1,
                              time_start, N,
                              daily_work_mins=daily_work_mins,
                              charging_rate=charging_rate,
                              time_stop = dates[-1] + dt.timedelta(minutes=60),
-                             eff = 1)
+                             eff = 1, battery_left=1)
     #total money
     assert result[0] < 10e-9
 
-    result = utils.cost_calc('discharging', dates, prices, 10e-10,
+    result = utils.cost_calc('discharging', dates, prices, 1,
                              time_start, N,
                              daily_work_mins=daily_work_mins,
                              charging_rate=charging_rate,
                              time_stop = None,
-                             eff = 1)
+                             eff = 1, battery_left=0)
     #total money
     assert result[0] < 10e-9
 
