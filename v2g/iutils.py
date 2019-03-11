@@ -26,6 +26,8 @@ def state_pop(state):
                 'Texas': 'houston.csv'}
     return os.path.join('Population_data', pop_files[state]), os.path.join('LBMP', LBMP_file[state])
 
+def convert_npdatetime64_topy(a):
+    return a.astype('M8[ms]').astype('O')
 
 def add_time(array = None, minutes = [0]):
 	''' This function adds the given time in minutes to the array elementwise
@@ -92,7 +94,6 @@ def cost_calc(state, dates, price,
 					percent_deg  = percentage degradation
 	'''
 	time_start = round_dt_down(time_start, minutes = 60)
-
 	if(state == 'charging'):
 		if time_stop is None:
 			raise ValueError()
@@ -107,7 +108,6 @@ def cost_calc(state, dates, price,
 		for i in range(len(dates)):
 			n = -1
 			if(dates[i] == time):
-				print(battery_charged, battery)
 				if((battery_charged < battery) and (time < stop)):
 					if((stop - time).total_seconds() / 60 < 60):
 						total_cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60) / 60
@@ -220,7 +220,7 @@ def calc_open_circuit_voltage(SOC):
 	Voc = a + b * (-math.log(SOC))**m + c * SOC + d * math.e**(n * (SOC - 1))
 	return Voc
 
-def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.9):
+def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 298.15, Dod_max = 0.9):
 	''' This function calculates the percentage of battery degradation happening at every time step for NCA li-ion chemistry
 	Args:
 		dt : time in minutes (time_step of operation)
@@ -273,11 +273,11 @@ def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_m
 	Q_loss = min(Qli, Qsites)		# Q_loss is relative capacity after degradation
 
 	# Do not allow for negative degradation
-	return min(max(Q_loss, 0), 1)
+	return Q_loss
 
 
 
-def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate = 11.5, eff=0.78, DoD = 0.9):
+def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate = 11.5, eff=0.78, DoD = 0.9, SF = 0.3):
 	time_arrival_work = round_dt_up(time_arrival_work)
 	final_discharge_cost = 0
 	final_charge_cost = 0
@@ -315,8 +315,8 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			#Total money earned for discharging the battery
 			#print(k)
 			#print(day.date())
-			date_set = np.array(dates[k:k+24*3])
-			price_set = np.array(price[k:k+24*3])
+			date_set = dates[k:k+24*3]
+			price_set = price[k:k+24*3]
 			battery_used = 0
 			time_discharge_starts = round_dt_up(time_arrival_work)
 
@@ -337,7 +337,7 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			#q_loss is the relative capacity
 			q_deg += q_loss
 			# cost_charging += q_loss/100 *battery * bat_degradation * eff
-			final_cdgdn += (SF - q_deg) * bat_degradation/SF		#battery * q_loss * bat_degradation
+			final_cdgdn += q_loss * bat_degradation/SF		#battery * q_loss * bat_degradation
 			final_charge_cost += cost_charging
 			battery_cycles += battery_used/battery
 
@@ -348,7 +348,7 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			commute_cycles += battery_used_for_travel/battery_commute
 			q_deg_commute += q_loss_commute
 			# cost_commute += battery * (1 - q_loss_commute) * bat_degradation * eff
-			final_commute_cdgdn += (SF - q_deg_commute) * bat_degradation 	#battery_commute *  q_loss_commute * bat_degradation
+			final_commute_cdgdn += q_loss_commute * bat_degradation/SF 	#battery_commute *  q_loss_commute * bat_degradation
 			final_commute_cost += cost_commute
 
 			time_arrival_work += dt.timedelta(days = 1)

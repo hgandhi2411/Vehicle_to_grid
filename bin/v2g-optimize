@@ -17,7 +17,7 @@ prefix = ''
 
 # prefix = os.path.join(os.path.expanduser('~'),'Documents', 'Heta', 'White lab', 'Vehicle_to_grid')
 
-Sample = 2813   #total EVs in NYC Sept2018
+Sample = 100   #total EVs in NYC Sept2018
 #Source: https://www.nyserda.ny.gov/All-Programs/Programs/ChargeNY/Support-Electric/Map-of-EV-Registrations
 
 cars = pd.read_csv(os.path.join(prefix,'Cars.csv'), delimiter= ',')
@@ -133,27 +133,31 @@ for s in state_list:
 
 	#LBMP Data
 	data = pd.read_csv(os.path.join(prefix, lbmp_file))
-	dates = pd.to_datetime(data.Time_Stamp)
+	dates = convert_npdatetime64_topy(pd.to_datetime(data.Time_Stamp).values)
 	price = np.asarray(data.LBMP)/1000		#LBMP in kWh
 
 	data_file = os.path.join(result_path, '{}.csv'.format(s))
 
-	pricetaker_savings[s] = []
-	max_savings[s] = []
-	osp[s] = []
+	pricetaker_savings = []
+	max_savings = []
+	osp = []
+	capacity_fade = []
 
 	for i in range(Sample):
 		if i % 100 == 0:
 			print(i, dt.datetime.now() - start)
-		pricetaker_savings[s].append(-(profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)[0]))
+		pricetaker_savings.append(-(profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)[0]))
 
-		result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 25))
+		result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 50))
 
-		max_savings[s].append(-result.fun)
-		osp[s].append(result.x)
+		max_savings.append(-result.fun)
+		o = result.x
+		osp.append(o)
 
+		result = profit(x= o, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
 		#_, discost, chcost, cdgdn, comcost, comdgdn, q_deg, q_deg_commute = profit(x= result.x, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
-
-	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'OSP_Savings': max_savings, 'OSP': osp, 'Pricetaker_Savings': pricetaker_savings}
+		print(result)
+		capacity_fade.append(result[6])
+	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'OSP_Savings': max_savings, 'OSP': osp, 'Pricetaker_Savings': pricetaker_savings, 'capacity_fade': capacity_fade}
 	results = pd.DataFrame.from_dict(results)
 	results.to_csv(data_file)

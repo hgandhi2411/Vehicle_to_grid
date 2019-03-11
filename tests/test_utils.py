@@ -163,7 +163,7 @@ def test_open_circuit_voltage():
 
 def test_real_battery_degradation():
     N = [0, 1, 100, 10000]
-    SOC = 1
+    SOC = [1, 0.8, 0.6, 0.4, 0.2]
     dt = 60
     #allowable error
     epsilon = 10**(-4)
