@@ -277,7 +277,7 @@ def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_m
 
 
 
-def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate = 11.5, eff=0.78, DoD = 0.9):
+def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate = 11.5, eff=0.78, DoD = 0.9, SF = 0.3):
 	time_arrival_work = round_dt_up(time_arrival_work)
 	final_discharge_cost = 0
 	final_charge_cost = 0
