@@ -179,7 +179,7 @@ def create_dict(file_data, bins = 'auto'):
 	keys = np.asarray(list(file_dict.keys()))
 	return values, keys
 
-def dist_time_battery_correlated_sampling(dist, time, ev_range, N):
+def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9):
 	'''Sample from data for a given sample size N
 		Args:
 			dist, time: The arrays to sample from (otype - array)
@@ -197,7 +197,7 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N):
 	sampled_dist = np.zeros(N)
 	sampled_time = np.zeros(N)
 	for i in range(N):
-		while(2 * x >= ev_range[i]):
+		while(2 * x/DoD >= ev_range[i]):
 			ind = np.random.choice(np.arange(length), p = p)
 			x = dist[ind]
 		sampled_dist[i] = x
@@ -310,8 +310,8 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			#Total money earned for discharging the battery
 			#print(k)
 			#print(day.date())
-			date_set = np.asarray([i for i in dates[k:k+24*3]])
-			price_set = np.asarray([i for i in price[k:k+24*3]])
+			date_set = np.array(dates[k:k+24*3])
+			price_set = np.array(price[k:k+24*3])
 			battery_used = 0
 			time_discharge_starts = round_dt_up(time_arrival_work)
 

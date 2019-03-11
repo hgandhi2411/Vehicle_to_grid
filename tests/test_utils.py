@@ -174,4 +174,54 @@ def test_real_battery_degradation():
     result3 = utils.real_battery_degradation(dt = dt, N = N[3], T = 298.15, Dod_max= 0.9)
     assert result3 - 0.9424 < epsilon
 
+def test_profit():
+    base = dt.datetime(2017, 1, 1, 0)
+    dates = [base + dt.timedelta(hours = x) for x in range(6024)]
+    #price is always 1
+    prices = [1 for _ in dates]
+    #battery specifications
+    battery = 100 # kWh
+    ev_range = 295 # miles
+    charging_time = 510 #minutes
+    # commute variables
+    distance = 10
+    time = distance * 2.5
+    #work pattern
+    time_arrival_work = dt.datetime(2017,1,1,8, 30)
+    daily_work_mins = 400
 
+    result = utils.profit(x = 2, battery = 100, 
+                        battery_used_for_travel = distance * 2 * battery/ev_range, 
+                        commute_distance = distance, commute_time = time, 
+                        complete_charging_time = charging_time, 
+                        time_arrival_work = time_arrival_work,
+                        daily_work_mins = daily_work_mins, 
+                        dates = dates, price = prices, bat_degradation = 10)
+
+    #Assert profit is zero
+    assert result[0] == 0
+    #assert discharge cost is zero
+    assert result[2] == 0
+    #assert charging cost and commute cost are the same
+    assert result[1] == result[4]
+    # assert q_deg and q_deg_commute are equal
+    assert result[6] == result[7]
+    
+    result = utils.profit(x = 0, battery = 100, 
+                        battery_used_for_travel = distance * 2 * battery/ev_range, 
+                        commute_distance = distance, commute_time = time, 
+                        complete_charging_time = charging_time, 
+                        time_arrival_work = time_arrival_work,
+                        daily_work_mins = daily_work_mins, 
+                        dates = dates, price = prices, bat_degradation = 10)
+
+    #Assert profit is zero
+    assert result[0] > 0
+    #assert discharge cost is zero
+    assert result[2] > 0
+    #assert charging cost is expected to be more than commute cost due to additional degradation
+    assert result[1] > result[4]
+    # degradation is more when discharging everyday
+    assert result[6] > result[7]
+    # total degradation must be less than the battery capacity
+    assert result[6] < 1
