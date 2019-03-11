@@ -204,7 +204,21 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N):
 		x = 1000
 	return sampled_dist, sampled_time
 
-def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.8):
+def calc_open_circuit_voltage(SOC):
+    # Voc calc reference: Energies 2016, 9, 900
+	# Parameters for LMNCO cathodes at 45 degreeC - couldn't find for NCA batteries
+	if SOC == 0:
+		raise ValueError()
+	a = 3.535
+	b = -0.0571
+	c = -0.2847
+	d = 0.9475
+	m = 1.4
+	n = 2
+	Voc = a + b * (-math.log(SOC))**m + c * SOC + d * math.e**(n * (SOC - 1))
+	return Voc
+
+def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_max = 0.9):
 	''' This function calculates the percentage of battery degradation happening at every time step for NCA li-ion chemistry
 	Args:
 		dt : time in minutes (time_step of operation)
@@ -214,13 +228,13 @@ def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_m
 		T : battery temperature in Kelvin, default = 318K
 	Returns: float, total percentage loss in the battery capacity at given timestep timedelta
 	'''
-	dt = dt/24/60		#convert minutes to days
+	dt = dt/24/60	#convert minutes to days
 	V_nom = 360		#V Nominal voltage of EV batteries
 	#reference quantities
 	T_ref = 298.15 	# K
 	V_ref = 3.6		#V
 	Dod_ref = 1.0
-	F = 96485 		# Amp s/mol	Faraday constant
+	F = 96485 		# C/mol	Faraday constant
 	Rug = 8.314	# J/K/mol
 
 	# fitted parameters for NCA chemistries
@@ -228,40 +242,35 @@ def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_m
 	c0= 1
 	b1_ref = 1.794 * 10**(-4)	# 1/day^(0.5)
 	c2_ref = 1.074 * 10**(-4)	# 1/day
-	Eab1 = 35000				# J/mol /K
+	Eab1 = 35000				# J/mol
 	alpha_b1 = 0.051
 	beta_b1 = 0.99
-	Eac2 = 35000				# J/mol /K
+	Eac2 = 35000				# J/mol
 	alpha_c2 =  0.023
 	beta_c2 = 2.61
 	t_life = 1					#day
+	# Degradation rates are calculated in terms of representative duty cycle period - typically 1 day or 1 week
+	dt_cyc = 1					#day
 
-	# Voc calc reference: Energies 2016, 9, 900
-	# Parameters for LMNCO cathodes at 45 degreeC - couldn't find for NCA batteries
-	a = 3.535
-	b = -0.0571
-	c = -0.2847
-	d = 0.9475
-	m = 1.4
-	n = 2
-	Voc = a + b * (-math.log(SOC))**m + c * SOC + d * math.e**(n * (SOC - 1))
+	Voc = calc_open_circuit_voltage(SOC)
 
-	#integral over delta(tcyc) ignored because we are considering one time step
-	b1 = (b1_ref / dt) * math.e**(-Eab1/Rug * (1/T - 1/T_ref)) \
+	# integral over delta(tcyc) ignored because we are considering one time step
+	b1 = (b1_ref / dt_cyc) * math.e**(-Eab1/Rug * (1/T - 1/T_ref)) \
 		* math.e**(alpha_b1 * F / Rug *(Voc/T - V_ref/T_ref)) \
-		* (((1 + Dod_max)/Dod_ref)**beta_b1)
+		* (((1 + Dod_max)/Dod_ref)**beta_b1) * dt
 
-	b1 = max(0, b1)
+	# b1 = max(0, b1)
 	Qli = b0 - b1*t_life**(0.5)
 
-	c2 = (c2_ref / dt) *  math.e**(-Eac2/Rug * (1/T - 1/T_ref)) \
+	c2 = (c2_ref / dt_cyc) *  math.e**(-Eac2/Rug * (1/T - 1/T_ref)) \
 		* math.e**(alpha_c2 * F / Rug *(Voc/T - V_ref/T_ref)) \
-		* (N* (Dod_max/Dod_ref)**beta_c2)
+		* (N* (Dod_max/Dod_ref)**beta_c2) * dt
 
 	Qsites = c0 - c2 * t_life
 
-	Q_loss = min(Qli, Qsites)		# Q_loss is % degradation
+	Q_loss = min(Qli, Qsites)		# Q_loss is relative capacity after degradation
 
+	# Do not allow for negative degradation
 	return min(max(Q_loss, 0), 1)
 
 

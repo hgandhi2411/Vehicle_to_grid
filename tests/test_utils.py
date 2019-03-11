@@ -123,3 +123,16 @@ def test_dist_time_battery_sampling():
     assert (result[0] * 2 < ev_range).all()
     #Make sure value error is raised if size ev_range is not N
     pytest.raises(ValueError, utils.dist_time_battery_correlated_sampling, *(dist, time, ev_range[:10], 20))
+
+def test_open_circuit_voltage():
+    Voc = utils.calc_open_circuit_voltage(SOC = 1)
+    assert round(Voc, 2) == 4.2 
+
+def test_real_battery_degradation():
+    N = [0, 1]
+    SOC = 1
+    dt = 60
+    result = utils.real_battery_degradation(dt = dt, N = N[0], T = 298.15, Dod_max= 0.9)
+    assert result == 1
+    result = utils.real_battery_degradation(dt = dt, N = N[1], T = 298.15, Dod_max= 0.9)
+    assert result - (1 - 5.7645*10**(-6)) < 10**(-5)
