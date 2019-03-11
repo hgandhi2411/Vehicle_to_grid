@@ -72,6 +72,36 @@ def test_cost_calc_discharging():
     money = sum(prices) * charging_rate
     assert result[0] == money
 
+def test_cost_calc_empty_battery():
+    #price is always 1
+    dates = [dt.datetime(1,1,1,x) for x in range(24)]
+    prices = [1 for _ in dates]
+    #start right away
+    time_start = dt.datetime(1,1,1,0)
+    #no cycles
+    N = 0
+    #working hours
+    daily_work_mins = 24 * 60
+    #charging rate in Energy / seconds?
+    charging_rate = 1
+    result = utils.cost_calc('charging', dates, prices, 10e-10,
+                             time_start, N,
+                             daily_work_mins=daily_work_mins,
+                             charging_rate=charging_rate,
+                             time_stop = dates[-1] + dt.timedelta(minutes=60),
+                             eff = 1)
+    #total money
+    assert result[0] < 10e-9
+
+    result = utils.cost_calc('discharging', dates, prices, 10e-10,
+                             time_start, N,
+                             daily_work_mins=daily_work_mins,
+                             charging_rate=charging_rate,
+                             time_stop = None,
+                             eff = 1)
+    #total money
+    assert result[0] < 10e-9
+
 def test_cost_calc_charging():
     #all day discharge
     state = 'charging'
@@ -126,7 +156,7 @@ def test_dist_time_battery_sampling():
 
 def test_open_circuit_voltage():
     Voc = utils.calc_open_circuit_voltage(SOC = 1)
-    assert round(Voc, 2) == 4.2 
+    assert round(Voc, 2) == 4.2
 
 def test_real_battery_degradation():
     N = [0, 1, 100, 10000]
