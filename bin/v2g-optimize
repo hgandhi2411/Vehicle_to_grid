@@ -17,7 +17,7 @@ prefix = ''
 
 # prefix = os.path.join(os.path.expanduser('~'),'Documents', 'Heta', 'White lab', 'Vehicle_to_grid')
 
-Sample = 100   #total EVs in NYC Sept2018
+Sample = 200   #total EVs in NYC Sept2018
 #Source: https://www.nyserda.ny.gov/All-Programs/Programs/ChargeNY/Support-Electric/Map-of-EV-Registrations
 
 cars = pd.read_csv(os.path.join(prefix,'Cars.csv'), delimiter= ',')
@@ -142,11 +142,20 @@ for s in state_list:
 	max_savings = []
 	osp = []
 	capacity_fade = []
+	commute_cycles = []
+	v2g_cycles, charging_cost, commute_cost, discharging_cost = [], [], [], []
+	pt_cycles, pt_charging_cost, pt_discharging_cost, pt_cap_fade = [], [], [], []
 
 	for i in range(Sample):
 		if i % 100 == 0:
 			print(i, dt.datetime.now() - start)
-		pricetaker_savings.append(-(profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)[0]))
+
+		pt_scenario = profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)
+		pricetaker_savings.append(-pt_scenario[0])
+		pt_cycles.append(pt_scenario[9])
+		pt_charging_cost.append(pt_scenario[1])
+		pt_discharging_cost.append(pt_scenario[2])
+		pt_cap_fade.append(pt_scenario[6])
 
 		result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 50))
 
@@ -155,9 +164,14 @@ for s in state_list:
 		osp.append(o)
 
 		result = profit(x= o, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
-		#_, discost, chcost, cdgdn, comcost, comdgdn, q_deg, q_deg_commute = profit(x= result.x, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
-		print(result)
+		#_, chcost, discost, cdgdn, comcost, comdgdn, q_deg, q_deg_commute, commute_cycles, v2g_cycles = profit(x= result.x, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
 		capacity_fade.append(result[6])
-	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'OSP_Savings': max_savings, 'OSP': osp, 'Pricetaker_Savings': pricetaker_savings, 'capacity_fade': capacity_fade}
+		commute_cycles.append(result[8])
+		v2g_cycles.append(result[9])
+		commute_cost.append(result[4])
+		charging_cost.append(result[1])
+		discharging_cost.append(result[2])
+
+	results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'OSP_Savings': max_savings, 'OSP': osp, 'Pricetaker_Savings': pricetaker_savings, 'capacity_fade': capacity_fade, 'Commute_cycles': commute_cycles, 'v2g_cycles': v2g_cycles, 'pt_cycles': pt_cycles, 'osp_charging': charging_cost, 'pt_charging': pt_charging_cost, 'osp_discharging': discharging_cost, 'commute_cost': commute_cost, 'pt_capacity_fade': pt_cap_fade }
 	results = pd.DataFrame.from_dict(results)
 	results.to_csv(data_file)

@@ -362,7 +362,7 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			time_arrival_work += dt.timedelta(days = 1)
 
 	annual_savings = final_discharge_cost - final_charge_cost - final_cdgdn - (0.0 - final_commute_cost - final_commute_cdgdn)
-	return -annual_savings, final_charge_cost, final_discharge_cost, final_cdgdn, final_commute_cost, final_commute_cdgdn, q_deg, q_deg_commute
+	return -annual_savings, final_charge_cost, final_discharge_cost, final_cdgdn, final_commute_cost, final_commute_cdgdn, q_deg, q_deg_commute, commute_cycles, battery_cycles
 
 def profit_wrapper(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate, eff):
 	output = profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate, eff)
