@@ -129,10 +129,19 @@ def test_open_circuit_voltage():
     assert round(Voc, 2) == 4.2 
 
 def test_real_battery_degradation():
-    N = [0, 1]
+    N = [0, 1, 100, 10000]
     SOC = 1
     dt = 60
+    #allowable error
+    epsilon = 10**(-4)
+    #testing for different number of cycles
     result = utils.real_battery_degradation(dt = dt, N = N[0], T = 298.15, Dod_max= 0.9)
     assert result == 1
-    result = utils.real_battery_degradation(dt = dt, N = N[1], T = 298.15, Dod_max= 0.9)
-    assert result - (1 - 5.7645*10**(-6)) < 10**(-5)
+    result1 = utils.real_battery_degradation(dt = dt, N = N[1], T = 298.15, Dod_max= 0.9)
+    assert result1 - (1 - 5.7645*10**(-6)) < epsilon
+    result2 = utils.real_battery_degradation(dt = dt, N = N[2], T = 298.15, Dod_max= 0.9)
+    assert result2 - 0.9994 < epsilon
+    result3 = utils.real_battery_degradation(dt = dt, N = N[3], T = 298.15, Dod_max= 0.9)
+    assert result3 - 0.9424 < epsilon
+
+
