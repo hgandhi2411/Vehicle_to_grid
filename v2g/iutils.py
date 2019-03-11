@@ -180,7 +180,7 @@ def create_dict(file_data, bins = 'auto'):
 	keys = np.asarray(list(file_dict.keys()))
 	return values, keys
 
-def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9):
+def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF = 0.3):
 	'''Sample from data for a given sample size N
 		Args:
 			dist, time: The arrays to sample from (otype - array)
@@ -198,7 +198,7 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9):
 	sampled_dist = np.zeros(N)
 	sampled_time = np.zeros(N)
 	for i in range(N):
-		while(2 * x/DoD >= ev_range[i]):
+		while(2 * x/DoD/SF >= ev_range[i]):
 			ind = np.random.choice(np.arange(length), p = p)
 			x = dist[ind]
 		sampled_dist[i] = x
@@ -337,7 +337,7 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			#q_loss is the relative capacity
 			q_deg += q_loss
 			# cost_charging += q_loss/100 *battery * bat_degradation * eff
-			final_cdgdn += battery * q_loss * bat_degradation
+			final_cdgdn += (SF - q_deg) * bat_degradation/SF		#battery * q_loss * bat_degradation
 			final_charge_cost += cost_charging
 			battery_cycles += battery_used/battery
 
@@ -348,7 +348,7 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			commute_cycles += battery_used_for_travel/battery_commute
 			q_deg_commute += q_loss_commute
 			# cost_commute += battery * (1 - q_loss_commute) * bat_degradation * eff
-			final_commute_cdgdn += battery_commute *  q_loss_commute * bat_degradation
+			final_commute_cdgdn += (SF - q_deg_commute) * bat_degradation 	#battery_commute *  q_loss_commute * bat_degradation
 			final_commute_cost += cost_commute
 
 			time_arrival_work += dt.timedelta(days = 1)

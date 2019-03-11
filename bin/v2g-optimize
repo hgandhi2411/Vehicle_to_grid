@@ -46,9 +46,11 @@ charging_rate = 11.5
 lifecycles = 5300		#for lithium ion battery from Gerad's article
 energy_throughput = 2*lifecycles*battery*DoD 		#Ln.Es.DoD (kWh)
 
-battery_cap_cost = 209
+battery_cap_cost = 209	#$/kWh
 # Nikolas Soulopoulos, Cost Projections - Battery, vehicles and TCO, BNEF, June 2018 Report
-bat_degradation = battery * battery_cap_cost/energy_throughput
+# bat_degradation = battery * battery_cap_cost/energy_throughput 	#$/kWh
+SF = 0.3		#Salvage factor
+bat_degradation = battery_cap_cost * battery
 working_days = 250
 np.set_printoptions(precision = 2, threshold = np.inf)
 
@@ -93,7 +95,7 @@ for s in state_list:
 				dist_sample.append(dist[i])
 				time_sample.append(time[i])
 	#Sample commute distance and time for state
-	commute_dist, commute_time = dist_time_battery_correlated_sampling(dist = dist_sample, time = time_sample, ev_range = ev_range, N = Sample)
+	commute_dist, commute_time = dist_time_battery_correlated_sampling(dist = dist_sample, time = time_sample, ev_range = ev_range, N = Sample, SF = SF)
 
 	#Actual calculations of battery usage and selling
 	battery_used_for_travel = 2 * commute_dist/dist_one_kWh  #kWh
