@@ -4,9 +4,12 @@ import numpy as np
 import pytest
 
 def test_add_time_arrayint():
-    array = [dt.datetime(2000, 1, 1, 2)]
+    array = [dt.datetime(2000, 1, 1, 2), dt.datetime(2005, 1, 3, 5)]
     out = utils.add_time(array, 60)
     delta = out[0] - array[0]
+    print(delta)
+    assert delta.seconds == 60 * 60
+    delta = out[1] - array[1]
     print(delta)
     assert delta.seconds == 60 * 60
 
@@ -190,7 +193,7 @@ def test_profit():
     time_arrival_work = dt.datetime(2017,1,1,8, 30)
     daily_work_mins = 400
 
-    result = utils.profit(x = 2, battery = 100, 
+    result = utils.profit(x = 2, battery = battery, 
                         battery_used_for_travel = distance * 2 * battery/ev_range, 
                         commute_distance = distance, commute_time = time, 
                         complete_charging_time = charging_time, 
@@ -207,7 +210,7 @@ def test_profit():
     # assert q_deg and q_deg_commute are equal
     assert result[6] == result[7]
     
-    result = utils.profit(x = 0, battery = 100, 
+    result = utils.profit(x = 0, battery = battery, 
                         battery_used_for_travel = distance * 2 * battery/ev_range, 
                         commute_distance = distance, commute_time = time, 
                         complete_charging_time = charging_time, 
@@ -215,9 +218,7 @@ def test_profit():
                         daily_work_mins = daily_work_mins, 
                         dates = dates, price = prices, bat_degradation = 10)
 
-    #Assert profit is zero
-    assert result[0] > 0
-    #assert discharge cost is zero
+    #assert discharge cost is greater than zero
     assert result[2] > 0
     #assert charging cost is expected to be more than commute cost due to additional degradation
     assert result[1] > result[4]

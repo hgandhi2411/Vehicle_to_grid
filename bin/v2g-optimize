@@ -52,14 +52,12 @@ bat_degradation = battery * battery_cap_cost/energy_throughput
 working_days = 250
 np.set_printoptions(precision = 2, threshold = np.inf)
 
-#Extracting and histograming commute distance data for NYS from NHTS
-# Sampling using the probability vectors for distance and time
+#Extracting commute distance and time data from NHTS
 nhts_filepath = os.path.join(prefix, 'PERV2PUB.CSV')
 #commute distance
 dist = np.genfromtxt(nhts_filepath, delimiter = ',', dtype = None, usecols = (103), skip_header = 1, filling_values = 0)
 #commute time
 time = np.genfromtxt(nhts_filepath, delimiter = ',', dtype = None, skip_header=1, usecols = (84), filling_values = 0)
-#work_time = np.genfromtxt('PERV2PUB.csv', delimiter = ',', dtype = None, usecols = (98), skip_header = 1, filling_values = 0)
 #state in column 49 of PERV2PUB.csv
 state = np.genfromtxt(nhts_filepath, delimiter = ',', dtype = None, usecols = (48), skip_header= 1, filling_values = 0)
 
@@ -94,7 +92,7 @@ for s in state_list:
 			if(dist[i] > 0 and dist[i] < 100 and time[i]> 0 and time[i] < 100):
 				dist_sample.append(dist[i])
 				time_sample.append(time[i])
-
+	#Sample commute distance and time for state
 	commute_dist, commute_time = dist_time_battery_correlated_sampling(dist = dist_sample, time = time_sample, ev_range = ev_range, N = Sample)
 
 	#Actual calculations of battery usage and selling

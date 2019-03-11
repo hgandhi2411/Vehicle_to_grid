@@ -7,6 +7,7 @@ from pandas.tseries.holiday import USFederalHolidayCalendar
 import scipy.stats as ss
 import os
 import math
+import random
 
 def state_pop(state):
     pop_files = {'Arizona': 'ss16paz.csv',
@@ -35,7 +36,7 @@ def add_time(array = None, minutes = [0]):
 	if isinstance(array, (list, np.ndarray)):
 		if not isinstance(minutes, (list, np.ndarray)):
 			minutes = np.repeat(minutes, len(array))
-		return np.asarray(array) + np.apply_along_axis(lambda x: dt.timedelta(minutes=int(x)), -1, minutes)
+		return np.asarray(array) + np.array([dt.timedelta(minutes = int(x)) for x in minutes])
 	else:
 		return array + dt.timedelta(minutes=int(minutes))
 
@@ -276,7 +277,7 @@ def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 318, Dod_m
 
 
 
-def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate = 11.5, eff=0.78):
+def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate = 11.5, eff=0.78, DoD = 0.9):
 	time_arrival_work = round_dt_up(time_arrival_work)
 	final_discharge_cost = 0
 	final_charge_cost = 0
@@ -292,6 +293,10 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 	day = dt.datetime(2017,1,1,0,0)
 	count = 1
 
+	# vacation time
+	num_vacation_weeks = np.random.binomial(52, 1/26, 1)	# expected value = 2 
+	vacation_weeks = random.sample(range(52), k = num_vacation_weeks[0])
+	vacation_days = np.array([i+np.arange(1, 8, 1) for i in vacation_weeks]).flatten()
 	#Using holiday calender
 	holidays = USFederalHolidayCalendar().holidays(start = '2017-01-01', end = '2018-01-01').to_pydatetime()
 	battery_commute = battery
@@ -299,7 +304,7 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 
 	while(count <= 250): #working_days
 		#check if it is a holiday
-		if day in holidays:
+		if day in holidays or count in vacation_days:
 			# print('{} is a holiday'.format(day.date()))
 			k+=24
 			day+= dt.timedelta(days=1)
@@ -363,4 +368,3 @@ def profit_wrapper(x, battery, battery_used_for_travel, commute_distance, commut
 	output = profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate, eff)
 	return output[0]
 
-#TODO: Check why degradation values are bizarre, exceeding battery capacity
