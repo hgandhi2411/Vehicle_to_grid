@@ -240,7 +240,7 @@ seed = None, charging_rate = 11.5, eff=0.78, SF = 0.3, DoD = 0.9):
 	final_commute_cdgdn = (1 - commute_battery.capacity_fade) * bat_degradation / SF
 	annual_savings = final_discharge_cost - final_charge_cost - final_cdgdn - (0.0 - final_commute_cost - final_commute_cdgdn)
 
-	return -annual_savings, final_charge_cost, final_discharge_cost, final_cdgdn, final_commute_cost, final_commute_cdgdn, 1 - battery.capacity_fade,  1 - commute_battery.capacity_fade, commute_battery.cycles, battery.cycles
+	return -annual_savings, final_charge_cost, final_discharge_cost, final_cdgdn, final_commute_cost, final_commute_cdgdn, battery.capacity_fade,  commute_battery.capacity_fade, commute_battery.cycles, battery.cycles
 
 def profit_wrapper(x, *args):
 	output = profit(x, *args)
