@@ -16,7 +16,7 @@ def main(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degr
 		state_list = [state_list]
 	if type(sell_prices) == str or type(sell_prices) == float:
 		sell_prices = [float(sell_prices)]
-	print('Running with \n\t state_list = {}\n\t sell_prices = {}\n\t prefix = {}'.format(state_list, sell_prices, prefix))
+	print('Running with \n\t state_list = {}\n\t sell_prices = {}\n\t prefix = {}\n\t samples = {}\n\t SF = {}'.format(state_list, sell_prices, prefix, samples, SF))
 
 	# prefix = os.path.join(os.path.expanduser('~'),'Documents', 'Heta', 'White lab', 'Vehicle_to_grid')
 
@@ -101,7 +101,6 @@ def main(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degr
 
 		#Actual calculations of battery usage and selling
 		battery_used_for_travel = 2 * commute_dist/dist_one_kWh  #kWh
-		battery_left_to_sell = battery*DoD - battery_used_for_travel
 
 		# Sampling departure times
 		pop_file, lbmp_file = state_pop(s)

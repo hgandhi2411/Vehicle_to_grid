@@ -8,6 +8,7 @@ import scipy.stats as ss
 import os
 import math
 import random
+from .battery import Battery
 
 def state_pop(state):
     pop_files = {'Arizona': 'ss16paz.csv',
@@ -69,10 +70,9 @@ def round_dt_down(time, minutes=5, hours=1):
 
 
 def cost_calc(state, dates, price,
-			  battery, time_start, N,
+			  battery, time_start, charging_rate,
 			  time_stop = None, daily_work_mins = None, set_SP = 0,
-			  battery_left = None, timedelta = 60, charging_rate = 11.5,
-			  eff = 0.78, DoD = 0.90):
+			  battery_left = 0, timedelta = 60):
 	'''This function will calculate the cost of electricity for based on the state -discharging or charging
 		Args: state = 'charging' or 'discharging'
 			dates = The time stamps for the data used (otype- array)
@@ -98,72 +98,28 @@ def cost_calc(state, dates, price,
 		if time_stop is None:
 			raise ValueError()
 		total_cost = 0
-		deg = 0
-		if battery_left is None:
-			battery_charged = battery*(1-DoD)
-		else:
-			battery_charged = battery_left
 		time = time_start
 		stop = time_stop
 		for i in range(len(dates)):
-			n = -1
 			if(dates[i] == time):
-				if((battery_charged < battery) and (time < stop)):
-					if((stop - time).total_seconds() / 60 < 60):
-						total_cost += charging_rate * eff * price[i] * ((stop - time).seconds / 60) / 60
-						battery_charged += charging_rate * ((stop - time).seconds / 60) / 60
-						if(battery_charged > battery):
-							battery_charged = battery
-						soc = battery_charged/battery
-						if(n != -1):
-							deg += (1 - real_battery_degradation(dt = 60 - n*60, SOC = soc, N = N))
-						else:
-							deg += (1 - real_battery_degradation(dt = 60, SOC = soc, N = N))
-						break
-					battery_charged += charging_rate	#hourly
-					if (battery_charged > battery):
-						battery_charged = battery
-					total_cost += charging_rate*eff*price[i]	#hourly
-					soc = battery_charged/battery
-					if(n != -1):
-						deg += (1 - real_battery_degradation(dt = 60 - n*60, SOC = soc, N = N))
-					else:
-						deg += (1 - real_battery_degradation(dt = 60, SOC = soc, N = N))
-					# -n*60 to factor for the fact that time - start is cumulative
-					time += dt.timedelta(hours = 1)
-					n += 1
-					# print(cost)
-		# print(percent_deg)
-		return total_cost, battery_charged, deg
+				if battery.soc < 1 and time < stop:
+					#charge for either timedelta or until we stop
+					total_cost += battery.charge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * price[i]
+					time += dt.timedelta(minutes = timedelta)
+		return total_cost
 
 	elif(state == 'discharging'):
 		if daily_work_mins is None:
 			raise ValueError()
-		total_cost = 0
-		battery_sold = 0
-		if battery_left is None:
-			battery_left = battery
-		if(battery_left == 0):
-			total_cost = 0
-			battery_sold = 0
 		time = time_start
 		stop = round_dt_down(time + dt.timedelta(minutes = daily_work_mins), minutes = timedelta)
 		money_earned = 0
 		for i in range(len(dates)):
 			if(dates[i] == time):
-				if((price[i] >= set_SP) and (battery_sold < battery_left) and (time < stop)):
-					if((stop - time).total_seconds() / 60 < 60):
-						money_earned += charging_rate * eff * price[i] * ((stop - time).seconds / 60 ) / 60
-						battery_sold += charging_rate * ((stop - time).seconds / 60 ) / 60
-						break
-					battery_sold += charging_rate
-					money_earned += charging_rate*eff*price[i]
+				if price[i] >= set_SP and battery.capacity * battery.soc > battery_left and time < stop:
+					money_earned += battery.discharge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * price[i]
 					time += dt.timedelta(minutes = timedelta)
-					battery_left -= charging_rate
-					if(battery_left < battery*(1 - DoD)):
-						break
-		total_cost = money_earned
-		return total_cost, battery_sold
+		return money_earned
 	else:
 		raise ValueError('Unknown state ' + state)
 
@@ -206,92 +162,17 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 		x = 1000
 	return sampled_dist, sampled_time
 
-def calc_open_circuit_voltage(SOC):
-    # Voc calc reference: Energies 2016, 9, 900
-	# Parameters for LMNCO cathodes at 45 degreeC - couldn't find for NCA batteries
-	if SOC == 0:
-		raise ValueError()
-	a = 3.535
-	b = -0.0571
-	c = -0.2847
-	d = 0.9475
-	m = 1.4
-	n = 2
-	Voc = a + b * (-math.log(SOC))**m + c * SOC + d * math.e**(n * (SOC - 1))
-	return Voc
-
-def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 298.15, Dod_max = 0.9):
-	''' This function calculates the percentage of battery degradation happening at every time step for NCA li-ion chemistry
-	Args:
-		dt : time in minutes (time_step of operation)
-		N : cycle number, default = 0, no cycling
-		DoD : depth of discharge, default = 0.9
-		i_rate : charging/discharging rate of the battery, default = 11.5 kWh = 11500/360 = 31.78 Ah
-		T : battery temperature in Kelvin, default = 318K
-	Returns: float, total percentage loss in the battery capacity at given timestep timedelta
-	'''
-	dt = dt/24/60	#convert minutes to days
-	V_nom = 360		#V Nominal voltage of EV batteries
-	#reference quantities
-	T_ref = 298.15 	# K
-	V_ref = 3.6		#V
-	Dod_ref = 1.0
-	F = 96485 		# C/mol	Faraday constant
-	Rug = 8.314	# J/K/mol
-
-	# fitted parameters for NCA chemistries
-	b0 = 1.04
-	c0= 1
-	b1_ref = 1.794 * 10**(-4)	# 1/day^(0.5)
-	c2_ref = 1.074 * 10**(-4)	# 1/day
-	Eab1 = 35000				# J/mol
-	alpha_b1 = 0.051
-	beta_b1 = 0.99
-	Eac2 = 35000				# J/mol
-	alpha_c2 =  0.023
-	beta_c2 = 2.61
-	t_life = 1					#day
-	# Degradation rates are calculated in terms of representative duty cycle period - typically 1 day or 1 week
-	dt_cyc = 1					#day
-
-	Voc = calc_open_circuit_voltage(SOC)
-
-	# integral over delta(tcyc) ignored because we are considering one time step
-	b1 = (b1_ref / dt_cyc) * math.e**(-Eab1/Rug * (1/T - 1/T_ref)) \
-		* math.e**(alpha_b1 * F / Rug *(Voc/T - V_ref/T_ref)) \
-		* (((1 + Dod_max)/Dod_ref)**beta_b1) * dt
-
-	# b1 = max(0, b1)
-	Qli = b0 - b1*t_life**(0.5)
-
-	c2 = (c2_ref / dt_cyc) *  math.e**(-Eac2/Rug * (1/T - 1/T_ref)) \
-		* math.e**(alpha_c2 * F / Rug *(Voc/T - V_ref/T_ref)) \
-		* (N* (Dod_max/Dod_ref)**beta_c2) * dt
-
-	Qsites = c0 - c2 * t_life
-
-	Q_loss = min(Qli, Qsites)		# Q_loss is relative capacity after degradation
-
-	# Do not allow for negative degradation
-	return Q_loss
-
-
-
 def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate = 11.5, eff=0.78, SF = 0.3, DoD = 0.9):
 	time_arrival_work = round_dt_up(time_arrival_work)
 	final_discharge_cost = 0
 	final_charge_cost = 0
-	final_cdgdn = 0
-	final_commute_cdgdn = 0
 	final_commute_cost = 0
-	battery_cycles = 0
-	q_deg = 0
-	q_loss_commute = 0
-	q_deg_commute = 0
-	commute_cycles = 0
 	k = 0
 	day = dt.datetime(2017,1,1,0,0)
 	count = 1
+	#convert battery variable into battery object
+	battery = Battery(battery, eff)
+	commute_battery = Battery(battery.capacity, battery.eff)
 
 	# vacation time
 	num_vacation_weeks = np.random.binomial(52, 1/26, 1)	# expected value = 2
@@ -299,8 +180,6 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 	vacation_days = np.array([i+np.arange(1, 8, 1) for i in vacation_weeks]).flatten()
 	#Using holiday calender
 	holidays = USFederalHolidayCalendar().holidays(start = '2017-01-01', end = '2018-01-01').to_pydatetime()
-	battery_commute = battery
-	battery_charged = battery
 
 	while(count <= 250): #working_days
 		#check if it is a holiday
@@ -317,52 +196,49 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 			#print(day.date())
 			date_set = dates[k:k+24*3]
 			price_set = price[k:k+24*3]
-			battery_used = 0
+
+			#go to work
+			#driving discharge
+			battery.discharge(battery_used_for_travel/2 / commute_time / 60, commute_time / 60, eff=1.0)
+			commute_battery.discharge(battery_used_for_travel/2 / commute_time / 60, commute_time / 60, eff=1.0)
+
 			time_discharge_starts = round_dt_up(time_arrival_work)
 
 			#Start with discharging, assuming battery has been used to commute one way
-			cost_discharging, battery_sold = cost_calc(state = 'discharging', dates = date_set, price = price_set, battery = battery, time_start = time_discharge_starts,  N = battery_cycles, time_stop = None, daily_work_mins = daily_work_mins, set_SP = x, battery_left = battery_charged - battery_used_for_travel/2, timedelta = 60, charging_rate=charging_rate, eff = eff)
+			cost_discharging = cost_calc(state = 'discharging', dates = date_set, price = price_set, battery = battery, time_start = time_discharge_starts, time_stop = None, daily_work_mins = daily_work_mins, set_SP = x, battery_left = battery_used_for_travel/2, timedelta = 60, charging_rate=charging_rate)
 			final_discharge_cost += cost_discharging
-			battery_used = battery_sold + battery_used_for_travel
 
 			#Fast forward time to when charging should start
 			time_leaving_work = add_time(time_arrival_work, daily_work_mins)
 			time_reach_home = add_time(time_leaving_work, commute_time)
-			time_charging_starts = round_dt_up(time_reach_home)
-			time_charging_stops = add_time(time_charging_starts, complete_charging_time*battery_used/battery)
-			time_charging_stops = round_dt_up(time_charging_stops)
-
-			#Charge the battery
-			cost_charging, battery_charged, q_loss = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery, time_start = time_charging_starts, N = battery_cycles, time_stop = time_charging_stops, battery_left = battery - battery_used, timedelta=60, charging_rate=charging_rate, eff = eff)
-			#q_loss is the relative capacity
-			q_deg += q_loss
-			# cost_charging += q_loss/100 *battery * bat_degradation * eff
-			final_cdgdn += q_loss * bat_degradation/SF		#battery * q_loss * bat_degradation
-			final_charge_cost += cost_charging
-			battery_cycles += battery_used/battery
-
-			#Cost of commute without V2G
-			charge_commute_stop = add_time(time_charging_starts, complete_charging_time*battery_used_for_travel/battery_commute)
-			charge_commute_stop = round_dt_up(charge_commute_stop)
-			cost_commute, battery_charged_commute, q_loss_commute = cost_calc(state = 'charging', dates= date_set, price = price_set, battery = battery_commute,  N = commute_cycles, time_start = time_charging_starts, time_stop = charge_commute_stop, battery_left = battery_commute - battery_used_for_travel, charging_rate=charging_rate, eff = eff)
-			commute_cycles += battery_used_for_travel/battery_commute
-			q_deg_commute += q_loss_commute
-			# cost_commute += battery * (1 - q_loss_commute) * bat_degradation * eff
-			final_commute_cdgdn += q_loss_commute * bat_degradation/SF 	#battery_commute *  q_loss_commute * bat_degradation
-			final_commute_cost += cost_commute
+			#driving discharge
+			battery.discharge(battery_used_for_travel/2 / commute_time / 60, commute_time / 60, eff=1.0)
+			commute_battery.discharge(battery_used_for_travel/2 / commute_time / 60, commute_time / 60, eff=1.0)
 
 			time_arrival_work += dt.timedelta(days = 1)
 			k += 24
 			day += dt.timedelta(days=1)
 			count+=1
 
+			#Charge the battery up until time to leave for work
+			time_charging_starts = round_dt_up(time_reach_home)
+			cost_charging= cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery, time_start = time_charging_starts, time_stop = time_arrival_work - dt.timedelta(minutes=commute_time), timedelta=60, charging_rate=charging_rate)
+			final_charge_cost += cost_charging
+
+			#Cost of commute without V2G
+			cost_commute = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = commute_battery, time_start = time_charging_starts, time_stop = time_arrival_work - dt.timedelta(minutes=commute_time), timedelta=60, charging_rate=charging_rate)
+			final_commute_cost += cost_commute
+
 		else:
 			k+=24
 			day+= dt.timedelta(days=1)
 			time_arrival_work += dt.timedelta(days = 1)
 
+	final_cdgdn = (1 - battery.capacity_fade) * bat_degradation / SF
+	final_commute_cdgdn = (1 - commute_battery.capacity_fade) * bat_degradation / SF
 	annual_savings = final_discharge_cost - final_charge_cost - final_cdgdn - (0.0 - final_commute_cost - final_commute_cdgdn)
-	return -annual_savings, final_charge_cost, final_discharge_cost, final_cdgdn, final_commute_cost, final_commute_cdgdn, q_deg, q_deg_commute, commute_cycles, battery_cycles
+
+	return -annual_savings, final_charge_cost, final_discharge_cost, final_cdgdn, final_commute_cost, final_commute_cdgdn, 1 - battery.capacity_fade,  1 - commute_battery.capacity_fade, commute_battery.cycles, battery.cycles
 
 def profit_wrapper(x, *args):
 	output = profit(x, *args)

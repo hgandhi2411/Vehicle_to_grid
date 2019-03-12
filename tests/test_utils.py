@@ -1,4 +1,5 @@
 import v2g.iutils as utils
+from v2g import Battery
 import datetime as dt
 import numpy as np
 import pytest
@@ -57,23 +58,20 @@ def test_cost_calc_discharging():
     dates = [dt.datetime(1,1,1,x) for x in range(24)]
     prices = [1 for _ in dates]
     #huge battery
-    battery = 10000
+    battery = Battery(1000, 1.0)
     #start right away
     time_start = dt.datetime(1,1,1,0)
-    #no cycles
-    N = 0
     #working hours
     daily_work_mins = 24 * 60
     #charging rate in Energy / seconds?
     charging_rate = 1
     result = utils.cost_calc(state, dates, prices, battery,
-                             time_start, N,
+                             time_start,
                              daily_work_mins=daily_work_mins,
-                             charging_rate=charging_rate,
-                             eff = 1)
+                             charging_rate=charging_rate)
     #total money
     money = sum(prices) * charging_rate
-    assert result[0] == money
+    assert result == money
 
 def test_cost_calc_empty_battery():
     #price is always 1
@@ -81,29 +79,25 @@ def test_cost_calc_empty_battery():
     prices = [1 for _ in dates]
     #start right away
     time_start = dt.datetime(1,1,1,0)
-    #no cycles
-    N = 0
     #working hours
     daily_work_mins = 24 * 60
     #charging rate in Energy / seconds?
     charging_rate = 1
-    result = utils.cost_calc('charging', dates, prices, 1,
-                             time_start, N,
+    result = utils.cost_calc('charging', dates, prices, Battery(1, 1.0),
+                             time_start,
                              daily_work_mins=daily_work_mins,
                              charging_rate=charging_rate,
-                             time_stop = dates[-1] + dt.timedelta(minutes=60),
-                             eff = 1, battery_left=1)
+                             time_stop = dates[-1] + dt.timedelta(minutes=60), battery_left=1)
     #total money
-    assert result[0] < 10e-9
+    assert result < 10e-9
 
-    result = utils.cost_calc('discharging', dates, prices, 1,
-                             time_start, N,
+    result = utils.cost_calc('discharging', dates, prices, Battery(1, 1.0),
+                             time_start,
                              daily_work_mins=daily_work_mins,
                              charging_rate=charging_rate,
-                             time_stop = None,
-                             eff = 1, battery_left=0)
+                             time_stop = None, battery_left=1)
     #total money
-    assert result[0] < 10e-9
+    assert result < 10e-9
 
 def test_cost_calc_charging():
     #all day discharge
@@ -112,24 +106,22 @@ def test_cost_calc_charging():
     dates = [dt.datetime(1,1,1,x) for x in range(24)]
     prices = [1 for _ in dates]
     #huge battery
-    battery = 10000
+    battery = Battery(10000, 1.0)
+    battery.soc = 0
     #start right away
     time_start = dt.datetime(1,1,1,0)
-    #no cycles
-    N = 0
     #working hours
     daily_work_mins = 24 * 60
     #charging rate in Energy / seconds?
     charging_rate = 1
     result = utils.cost_calc(state, dates, prices, battery,
-                             time_start, N,
+                             time_start,
                              daily_work_mins=daily_work_mins,
                              charging_rate=charging_rate,
-                             time_stop = dates[-1] + dt.timedelta(minutes=60),
-                             eff = 1, DoD = 0.90)
+                             time_stop = dates[-1] + dt.timedelta(minutes=60))
     #total money
     money = sum(prices) * charging_rate
-    assert result[0] == money
+    assert result == money
 
 def test_create_dict():
     #test data
@@ -157,26 +149,6 @@ def test_dist_time_battery_sampling():
     #Make sure value error is raised if size ev_range is not N
     pytest.raises(ValueError, utils.dist_time_battery_correlated_sampling, *(dist, time, ev_range[:10], 20))
 
-def test_open_circuit_voltage():
-    Voc = utils.calc_open_circuit_voltage(SOC = 1)
-    assert round(Voc, 2) == 4.2
-
-def test_real_battery_degradation():
-    N = [0, 1, 100, 10000]
-    SOC = [1, 0.8, 0.6, 0.4, 0.2]
-    dt = 60
-    #allowable error
-    epsilon = 10**(-4)
-    #testing for different number of cycles
-    result = utils.real_battery_degradation(dt = dt, N = N[0], T = 298.15, Dod_max= 0.9)
-    assert result == 1
-    result1 = utils.real_battery_degradation(dt = dt, N = N[1], T = 298.15, Dod_max= 0.9)
-    assert result1 - (1 - 5.7645*10**(-6)) < epsilon
-    result2 = utils.real_battery_degradation(dt = dt, N = N[2], T = 298.15, Dod_max= 0.9)
-    assert result2 - 0.9994 < epsilon
-    result3 = utils.real_battery_degradation(dt = dt, N = N[3], T = 298.15, Dod_max= 0.9)
-    assert result3 - 0.9424 < epsilon
-
 def test_profit():
     base = dt.datetime(2017, 1, 1, 0)
     dates = [base + dt.timedelta(hours = x) for x in range(6024)]
@@ -193,12 +165,12 @@ def test_profit():
     time_arrival_work = dt.datetime(2017,1,1,8, 30)
     daily_work_mins = 400
 
-    result = utils.profit(x = 2, battery = battery, 
-                        battery_used_for_travel = distance * 2 * battery/ev_range, 
-                        commute_distance = distance, commute_time = time, 
-                        complete_charging_time = charging_time, 
+    result = utils.profit(x = 2, battery = battery,
+                        battery_used_for_travel = distance * 2 * battery/ev_range,
+                        commute_distance = distance, commute_time = time,
+                        complete_charging_time = charging_time,
                         time_arrival_work = time_arrival_work,
-                        daily_work_mins = daily_work_mins, 
+                        daily_work_mins = daily_work_mins,
                         dates = dates, price = prices, bat_degradation = 10)
 
     #Assert profit is zero
@@ -209,13 +181,13 @@ def test_profit():
     assert result[1] == result[4]
     # assert q_deg and q_deg_commute are equal
     assert result[6] == result[7]
-    
-    result = utils.profit(x = 0, battery = battery, 
-                        battery_used_for_travel = distance * 2 * battery/ev_range, 
-                        commute_distance = distance, commute_time = time, 
-                        complete_charging_time = charging_time, 
+
+    result = utils.profit(x = 0, battery = battery,
+                        battery_used_for_travel = distance * 2 * battery/ev_range,
+                        commute_distance = distance, commute_time = time,
+                        complete_charging_time = charging_time,
                         time_arrival_work = time_arrival_work,
-                        daily_work_mins = daily_work_mins, 
+                        daily_work_mins = daily_work_mins,
                         dates = dates, price = prices, bat_degradation = 10)
 
     #assert discharge cost is greater than zero

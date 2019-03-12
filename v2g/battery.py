@@ -37,8 +37,7 @@ class Battery:
         ''' Charge battery at rate for time T in hours, optionally stopping once soc reaches stop point.
         '''
         if self.soc >= stop_soc:
-            raise Warning('Cannot charge because SOC was higher than stop_soc')
-            return
+            return 0
         #just to crash on being given a date or something
         T = float(T)
         assert T < 10**5 # make sure not UTC stamp
@@ -65,7 +64,8 @@ class Battery:
         Teff = min(T, (stop_soc - self.soc) * self.capacity / rate / self.eff)
         #compute N
         N = Teff * rate * self.eff / self.capacity
-        voc = lambda t: self.voc(self.soc + t * rate * self.eff / self.capacity)
+        c = self.capacity
+        voc = lambda t: self.voc(self.soc + t * rate * self.eff / c)
         # integrate over open cricuit voltage
         # leading term 0.5 t^{-1/2} is to ensure integral results in b1 t^{1/2}
         # / 24 to go to hours?????
@@ -82,6 +82,8 @@ class Battery:
         self.cycles += N
 
         assert self.b1 < 1 and self.c2 < 1
+
+        return rate * Teff
 
     def age(self, T, temperature=298.15):
          #just to crash on being given a date or something
@@ -119,11 +121,14 @@ class Battery:
         assert self.b1 < 1
 
 
-    def discharge(self, rate, T, stop_soc = 0.1, temperature=298.15):
+    def discharge(self, rate, T, stop_soc = 0.1, temperature=298.15, eff=None):
         '''
         Discharge to T or stop_soc.
         '''
-        Teff = min(T, (self.soc - stop_soc) * self.capacity / rate / self.eff)
-        self.soc -= Teff * rate * self.eff / self.capacity
+        if eff is None:
+            eff = self.eff
+        Teff = min(T, (self.soc - stop_soc) * self.capacity / rate /eff)
+        self.soc -= Teff * rate *eff / self.capacity
         #should probably integrate over SOC here!
         self.age(T)
+        return Teff * rate
