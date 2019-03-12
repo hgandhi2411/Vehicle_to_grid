@@ -198,7 +198,7 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 	sampled_dist = np.zeros(N)
 	sampled_time = np.zeros(N)
 	for i in range(N):
-		while(2 * x/DoD/SF >= ev_range[i]):
+		while(2 * x/DoD / (1 - SF) >= ev_range[i]):
 			ind = np.random.choice(np.arange(length), p = p)
 			x = dist[ind]
 		sampled_dist[i] = x
@@ -277,7 +277,7 @@ def real_battery_degradation(dt, N = 0., SOC = 1., i_rate = 11.5, T = 298.15, Do
 
 
 
-def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate = 11.5, eff=0.78, DoD = 0.9, SF = 0.3):
+def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate = 11.5, eff=0.78, SF = 0.3, DoD = 0.9):
 	time_arrival_work = round_dt_up(time_arrival_work)
 	final_discharge_cost = 0
 	final_charge_cost = 0
@@ -294,7 +294,7 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 	count = 1
 
 	# vacation time
-	num_vacation_weeks = np.random.binomial(52, 1/26, 1)	# expected value = 2 
+	num_vacation_weeks = np.random.binomial(52, 1/26, 1)	# expected value = 2
 	vacation_weeks = random.sample(range(52), k = num_vacation_weeks[0])
 	vacation_days = np.array([i+np.arange(1, 8, 1) for i in vacation_weeks]).flatten()
 	#Using holiday calender
@@ -364,7 +364,7 @@ def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, 
 	annual_savings = final_discharge_cost - final_charge_cost - final_cdgdn - (0.0 - final_commute_cost - final_commute_cdgdn)
 	return -annual_savings, final_charge_cost, final_discharge_cost, final_cdgdn, final_commute_cost, final_commute_cdgdn, q_deg, q_deg_commute, commute_cycles, battery_cycles
 
-def profit_wrapper(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate, eff):
-	output = profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation, charging_rate, eff)
+def profit_wrapper(x, *args):
+	output = profit(x, *args)
 	return output[0]
 

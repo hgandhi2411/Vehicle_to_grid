@@ -10,7 +10,7 @@ from v2g.iutils import *
 import fire, tqdm, math, os, scipy.optimize
 
 
-def main(state_list=None, sell_prices=[], prefix='.', samples=2813):
+def main(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degredation=True):
 	#total EVs in NYC Sept2018 default samples
 	if type(state_list) == str:
 		state_list = [state_list]
@@ -52,8 +52,7 @@ def main(state_list=None, sell_prices=[], prefix='.', samples=2813):
 	battery_cap_cost = 209	#$/kWh
 	# Nikolas Soulopoulos, Cost Projections - Battery, vehicles and TCO, BNEF, June 2018 Report
 	# bat_degradation = battery * battery_cap_cost/energy_throughput 	#$/kWh
-	SF = 0.3		#Salvage factor
-	bat_degradation = battery_cap_cost * battery
+	bat_degradation = battery_cap_cost * battery * SF * int(degredation)
 	working_days = 250
 	np.set_printoptions(precision = 2, threshold = np.inf)
 
@@ -151,7 +150,7 @@ def main(state_list=None, sell_prices=[], prefix='.', samples=2813):
 
 		for i in tqdm.tqdm(range(samples)):
 
-			pt_scenario = profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff)
+			pt_scenario = profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff, SF=SF)
 			pricetaker_savings.append(-pt_scenario[0])
 			pt_cycles.append(pt_scenario[9])
 			pt_charging_cost.append(pt_scenario[1])
@@ -159,7 +158,7 @@ def main(state_list=None, sell_prices=[], prefix='.', samples=2813):
 			pt_cap_fade.append(pt_scenario[6])
 
 			if len(sell_prices) == 0:
-				result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 50))
+				result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], charging_rate, eff, SF), bracket=(0, 1.0), method='Golden', tol = 1.4901161193847656e-06, options=dict(maxiter = 50))
 				o = result.x
 			elif len(sell_prices) == 1:
 				o = sell_prices[0]
@@ -168,7 +167,7 @@ def main(state_list=None, sell_prices=[], prefix='.', samples=2813):
 				o = sell_prices[i]
 			osp.append(o)
 
-			result = profit(x= o, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
+			result = profit(x= o, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, SF=SF)
 			max_savings.append(-result[0])
 			#_, chcost, discost, cdgdn, comcost, comdgdn, q_deg, q_deg_commute, commute_cycles, v2g_cycles = profit(x= result.x, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate)
 			capacity_fade.append(result[6])
