@@ -10,13 +10,13 @@ from v2g.iutils import *
 import fire, tqdm, math, os, scipy.optimize
 
 
-def main(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degredation=True):
+def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degredation=True, efficiency=0.78, battery_cap_cost = 209, charging_rate = 11.5):
 	#total EVs in NYC Sept2018 default samples
 	if type(state_list) == str:
 		state_list = [state_list]
 	if type(sell_prices) == str or type(sell_prices) == float:
 		sell_prices = [float(sell_prices)]
-	print('Running with \n\t state_list = {}\n\t sell_prices = {}\n\t prefix = {}\n\t samples = {}\n\t SF = {}'.format(state_list, sell_prices, prefix, samples, SF))
+	print('Running with \n\t state_list = {}\n\t sell_prices = {}\n\t prefix = {}\n\t samples = {}\n\t SF = {}\n\t Degredation = {}\n\t efficiency = {}\n\t battery_cap_cost = {}\n\t charging_rate = {}'.format(state_list, sell_prices, prefix, samples, SF, degredation, efficiency, battery_cap_cost, charging_rate))
 
 	# prefix = os.path.join(os.path.expanduser('~'),'Documents', 'Heta', 'White lab', 'Vehicle_to_grid')
 
@@ -36,24 +36,18 @@ def main(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degr
 	dist_one_kWh = np.array([rated_dist_dict[i] for i in battery])
 	complete_charging_time = np.array([charge_time_dict[i] for i in battery])
 
-	eff = 0.78 #roundtrip efficiency of Tesla S
+	eff = efficiency #roundtrip efficiency of Tesla S - 0.78
 	#reference: Shirazi, Sachs 2017
-	DoD = 0.80   #depth of discharge
 
-	charging_rate = 11.5
+#	charging_rate = 11.5
 	# Considering AC Level2 Charging using SAE J1772 (240V/80A), standard on board chargers are
 	# capable of delivering 48A with the high amperage version being able to deliver 72A - tesla.com
 	# Super charger gives 17.2 kWh/hr charging rate
 
 	#battery degradation cost
-	lifecycles = 5300		#for lithium ion battery from Gerad's article
-	energy_throughput = 2*lifecycles*battery*DoD 		#Ln.Es.DoD (kWh)
-
-	battery_cap_cost = 209	#$/kWh
 	# Nikolas Soulopoulos, Cost Projections - Battery, vehicles and TCO, BNEF, June 2018 Report
 	# bat_degradation = battery * battery_cap_cost/energy_throughput 	#$/kWh
 	bat_degradation = battery_cap_cost * battery * int(degredation)
-	working_days = 250
 	np.set_printoptions(precision = 2, threshold = np.inf)
 
 	#Extracting commute distance and time data from NHTS
@@ -179,5 +173,6 @@ def main(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degr
 		results = pd.DataFrame.from_dict(results)
 		results.to_csv(data_file)
 
-if __name__ == '__main__':
-	fire.Fire(main)
+
+def main():
+	fire.Fire(v2g_optimize)

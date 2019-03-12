@@ -17,5 +17,8 @@ setup(name='v2g',
           'scipy',
           'fire',
           'tqdm'],
-      scripts=['bin/v2g-optimize']
+     entry_points=
+      {
+        'console_scripts': ['v2g-optimize=v2g.v2g_optimize:main']
+}
      )
