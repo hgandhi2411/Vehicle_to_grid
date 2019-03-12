@@ -154,7 +154,7 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 	sampled_dist = np.zeros(N)
 	sampled_time = np.zeros(N)
 	for i in range(N):
-		while(2 * x/DoD / (1 - SF) >= ev_range[i]):
+		while(2 * x/DoD >= ev_range[i]):
 			ind = np.random.choice(np.arange(length), p = p)
 			x = dist[ind]
 		sampled_dist[i] = x
