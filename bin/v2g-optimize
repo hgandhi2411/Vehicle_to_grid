@@ -52,7 +52,7 @@ def main(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degr
 	battery_cap_cost = 209	#$/kWh
 	# Nikolas Soulopoulos, Cost Projections - Battery, vehicles and TCO, BNEF, June 2018 Report
 	# bat_degradation = battery * battery_cap_cost/energy_throughput 	#$/kWh
-	bat_degradation = battery_cap_cost * battery * SF * int(degredation)
+	bat_degradation = battery_cap_cost * battery * int(degredation)
 	working_days = 250
 	np.set_printoptions(precision = 2, threshold = np.inf)
 

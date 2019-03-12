@@ -1,5 +1,6 @@
 import math
 import scipy.integrate
+import numpy as np
 
 class Battery:
     def __init__(self, capacity, eff):
@@ -24,14 +25,13 @@ class Battery:
     def voc(self, soc):
         # Voc calc reference: Energies 2016, 9, 900
         # Parameters for LMNCO cathodes at 45 degreeC - couldn't find for NCA batteries
-        assert soc >= 0
         a = 3.535
         b = -0.0571
         c = -0.2847
         d = 0.9475
         m = 1.4
         n = 2
-        Voc = a + b * (-math.log(soc))**m + c * soc + d * math.e**(n * (soc - 1))
+        Voc = a + b * (-np.log(soc))**m + c * soc + d * np.exp(n * (soc - 1))
         return Voc
     def charge(self, rate, T, temperature=298.15, stop_soc = 1.0, subinterval_limit = 10):
         ''' Charge battery at rate for time T in hours, optionally stopping once soc reaches stop point.
@@ -64,18 +64,34 @@ class Battery:
         Teff = min(T, (stop_soc - self.soc) * self.capacity / rate / self.eff)
         #compute N
         N = Teff * rate * self.eff / self.capacity
-        c = self.capacity
-        voc = lambda t: self.voc(self.soc + t * rate * self.eff / c)
+
+        time_grid = np.linspace(self.hour_age, self.hour_age + Teff, subinterval_limit)
+        soc = self.soc + (time_grid - self.hour_age) * rate * self.eff / self.capacity
+        soc[-1] = min(soc[-1], 1 - 10**-5)
+        soc[0] = max(10**-5, soc[0])
+        voc = self.voc(soc)
+        y = 0.5 * time_grid**(-1/2) * np.exp(-Eab1/Rug * (1/temperature - 1/T_ref)) \
+            * np.exp(alpha_b1 * F / Rug *(voc/temperature - V_ref/T_ref)) \
+            * ((1 + (1 - self.soc)/Dod_ref)**beta_b1)
+        #trapezoidal
+        self.b1 += b1_ref * np.sum((y[1:] + y[:-1]) * (time_grid[1:] - time_grid[:-1]) * 0.5)
+        y =  np.exp(-Eac2/Rug * (1/temperature - 1/T_ref)) \
+		* np.exp(alpha_c2 * F / Rug *(voc/temperature - V_ref/T_ref)) \
+		* (N * ((1 - self.soc)/Dod_ref)**beta_c2)
+        self.c2 += c2_ref * np.sum((y[1:] + y[:-1]) * (time_grid[1:] - time_grid[:-1]) * 0.5)
+
+        #voc = lambda t: self.voc(self.soc + t * rate * self.eff / c)
         # integrate over open cricuit voltage
         # leading term 0.5 t^{-1/2} is to ensure integral results in b1 t^{1/2}
         # / 24 to go to hours?????
-        self.b1 += b1_ref   * scipy.integrate.quad(lambda t: 0.5 * t**(-1/2) * math.e**(-Eab1/Rug * (1/temperature - 1/T_ref)) \
-            * math.e**(alpha_b1 * F / Rug *(voc(t - self.hour_age)/temperature - V_ref/T_ref)) \
-            * ((1 + (1 - self.soc)/Dod_ref)**beta_b1), self.hour_age,self.hour_age + Teff, limit=subinterval_limit)[0]
+
+        #self.b1 += b1_ref   * scipy.integrate.quad(lambda t: 0.5 * t**(-1/2) * math.e**(-Eab1/Rug * (1/temperature - 1/T_ref)) \
+        #    * math.e**(alpha_b1 * F / Rug *(voc(t - self.hour_age)/temperature - V_ref/T_ref)) \
+        #    * ((1 + (1 - self.soc)/Dod_ref)**beta_b1), self.hour_age,self.hour_age + #Teff, limit=subinterval_limit)[0]
         # / 24 to go to hours?????
-        self.c2 += c2_ref * scipy.integrate.quad(lambda t: math.e**(-Eac2/Rug * (1/temperature - 1/T_ref)) \
-		* math.e**(alpha_c2 * F / Rug *(voc(t)/temperature - V_ref/T_ref)) \
-		* (N* ((1 - self.soc)/Dod_ref)**beta_c2), 0, Teff, limit=subinterval_limit)[0]
+        #self.c2 += c2_ref * scipy.integrate.quad(lambda t: math.e**(-Eac2/Rug * (1/temperature - 1/T_ref)) \
+		#* math.e**(alpha_c2 * F / Rug *(voc(t)/temperature - V_ref/T_ref)) \
+		#* (N* ((1 - self.soc)/Dod_ref)**beta_c2), 0, Teff, limit=subinterval_limit)[0]
 
         self.soc += N
         self.hour_age += T
