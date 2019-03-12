@@ -14,6 +14,8 @@ setup(name='v2g',
           'seaborn',
           'numpy',
           'pandas',
-          'scipy'],
+          'scipy',
+          'fire',
+          'tqdm'],
       scripts=['bin/v2g-optimize']
      )
