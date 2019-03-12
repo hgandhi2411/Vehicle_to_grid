@@ -37,6 +37,7 @@ class Battery:
         ''' Charge battery at rate for time T in hours, optionally stopping once soc reaches stop point.
         '''
         if self.soc >= stop_soc:
+            raise Warning('Cannot charge because SOC was higher than stop_soc')
             return
         #just to crash on being given a date or something
         T = float(T)
@@ -63,18 +64,18 @@ class Battery:
         #compute if we will stop due to SOC or time
         Teff = min(T, (stop_soc - self.soc) * self.capacity / rate / self.eff)
         #compute N
-        N = Teff * rate * self.eff / self.capacity - self.soc
+        N = Teff * rate * self.eff / self.capacity
         voc = lambda t: self.voc(self.soc + t * rate * self.eff / self.capacity)
         # integrate over open cricuit voltage
         # leading term 0.5 t^{-1/2} is to ensure integral results in b1 t^{1/2}
-        # / 24 to go to hours
-        self.b1 += b1_ref / math.sqrt(24)  * scipy.integrate.quad(lambda t: 0.5 * t**(-1/2) * math.e**(-Eab1/Rug * (1/temperature - 1/T_ref)) \
+        # / 24 to go to hours?????
+        self.b1 += b1_ref   * scipy.integrate.quad(lambda t: 0.5 * t**(-1/2) * math.e**(-Eab1/Rug * (1/temperature - 1/T_ref)) \
             * math.e**(alpha_b1 * F / Rug *(voc(t - self.hour_age)/temperature - V_ref/T_ref)) \
-            * (((1 + self.soc)/Dod_ref)**beta_b1), self.hour_age,self.hour_age + Teff, limit=subinterval_limit)[0]
-        # / 24 to go to hours
-        self.c2 += c2_ref / 24 * scipy.integrate.quad(lambda t: math.e**(-Eac2/Rug * (1/temperature - 1/T_ref)) \
+            * ((1 + (1 - self.soc)/Dod_ref)**beta_b1), self.hour_age,self.hour_age + Teff, limit=subinterval_limit)[0]
+        # / 24 to go to hours?????
+        self.c2 += c2_ref * scipy.integrate.quad(lambda t: math.e**(-Eac2/Rug * (1/temperature - 1/T_ref)) \
 		* math.e**(alpha_c2 * F / Rug *(voc(t)/temperature - V_ref/T_ref)) \
-		* (N* (self.soc/Dod_ref)**beta_c2), 0, Teff, limit=subinterval_limit)[0]
+		* (N* ((1 - self.soc)/Dod_ref)**beta_c2), 0, Teff, limit=subinterval_limit)[0]
 
         self.soc += N
         self.hour_age += T
@@ -106,12 +107,12 @@ class Battery:
         beta_c2 = 2.61
         #compute if we will stop due to SOC or time
         voc = self.voc(self.soc)
-        # / 24 to go to hours
-        self.b1 += b1_ref / math.sqrt(24)  * \
+        # / 24 to go to hours?????
+        self.b1 += b1_ref  * \
             ((T + self.hour_age)**(1/2) - self.hour_age**(1/2)) * \
              math.e**(-Eab1/Rug * (1/temperature - 1/T_ref)) \
             * math.e**(alpha_b1 * F / Rug *(voc/temperature - V_ref/T_ref)) \
-            * (((1 + self.soc)/Dod_ref)**beta_b1)
+            * ((1 + (1 - self.soc)/Dod_ref)**beta_b1)
 
         self.hour_age += T
 
