@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -148,8 +150,8 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 
 	if len(ev_range) != N:
 		raise ValueError('Size of ev_range must equal N')
-	p = np.asarray([1/len(dist)]*len(dist))
 	length = len(dist)
+	p = np.asarray([1.0/length]*length)
 	x = 1000
 	sampled_dist = np.zeros(N)
 	sampled_time = np.zeros(N)
