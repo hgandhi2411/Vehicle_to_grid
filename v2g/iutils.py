@@ -237,6 +237,9 @@ seed = None, charging_rate = 11.5, eff=0.78, SF = 0.3, DoD = 0.9):
 			k+=24
 			day+= dt.timedelta(days=1)
 			time_arrival_work += dt.timedelta(days = 1)
+                        #age battery
+                        self.battery.age(24)
+                        self.commute_battery.age(24)
 
 	final_cdgdn = (1 - battery.capacity_fade) * bat_degradation / SF
 	final_commute_cdgdn = (1 - commute_battery.capacity_fade) * bat_degradation / SF
