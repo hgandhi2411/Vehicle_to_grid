@@ -25,6 +25,12 @@ class Battery:
     def voc(self, soc):
         # Voc calc reference: Energies 2016, 9, 900
         # Parameters for LMNCO cathodes at 45 degreeC - couldn't find for NCA batteries
+        if isinstance(soc, (list, np.ndarray)):
+            if soc.any() > 1.0 :
+                index = soc > np.array(np.ones(len(soc)))
+                soc[not index] = 1.0
+        elif soc > 1.0:
+            soc = 1.0
         a = 3.535
         b = -0.0571
         c = -0.2847
@@ -60,12 +66,13 @@ class Battery:
         Eac2 = 35000				# J/mol
         alpha_c2 =  0.023
         beta_c2 = 2.61
-        #compute if we will stop due to SOC or time
+        #compute if we will stop due to SOC or time, gives hours of charging
         Teff = min(T, (stop_soc - self.soc) * self.capacity / rate / self.eff)
-        #compute N
+        #compute N - fractional cycle
         N = Teff * rate * self.eff / self.capacity
 
         time_grid = np.linspace(self.hour_age, self.hour_age + Teff, subinterval_limit)
+        # get soc at each hour of the charging cycle
         soc = self.soc + (time_grid - self.hour_age) * rate * self.eff / self.capacity
         soc[-1] = min(soc[-1], 1 - 10**-5)
         soc[0] = max(10**-5, soc[0])
@@ -123,7 +130,7 @@ class Battery:
         Eac2 = 35000				# J/mol
         alpha_c2 =  0.023
         beta_c2 = 2.61
-        #compute if we will stop due to SOC or time
+
         voc = self.voc(self.soc)
         # / 24 to go to hours?????
         self.b1 += b1_ref  * \

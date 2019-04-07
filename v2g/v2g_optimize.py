@@ -18,9 +18,6 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 		sell_prices = [float(sell_prices)]
 	print('Running with \n\t state_list = {}\n\t sell_prices = {}\n\t prefix = {}\n\t samples = {}\n\t SF = {}\n\t Degredation = {}\n\t efficiency = {}\n\t battery_cap_cost = {}\n\t charging_rate = {}'.format(state_list, sell_prices, prefix, samples, SF, degredation, efficiency, battery_cap_cost, charging_rate))
 
-	# prefix = os.path.join(os.path.expanduser('~'),'Documents', 'Heta', 'White lab', 'Vehicle_to_grid')
-
-
 	#Source: https://www.nyserda.ny.gov/All-Programs/Programs/ChargeNY/Support-Electric/Map-of-EV-Registrations
 
 	cars = pd.read_csv(os.path.join(prefix,'Cars.csv'), delimiter= ',')
@@ -131,7 +128,7 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 		dates = convert_npdatetime64_topy(pd.to_datetime(data.Time_Stamp).values)
 		price = np.asarray(data.LBMP)/1000		#LBMP in kWh
 
-		data_file = os.path.join(result_path, '{}.csv'.format(s))
+		data_file = os.path.join(result_path, '{}_eff{}_cap{}_rch{}.csv'.format(s, eff, battery_cap_cost, charging_rate))
 
 		pricetaker_savings = []
 		max_savings = []

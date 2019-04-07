@@ -144,7 +144,7 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 			dist, time: The arrays to sample from (otype - array)
 			ev_range: array of length N, This is used to check that range of battery size is capable of handling commute distance sampled.
 			N: desired sample size
-			state_mask: A string or number that should be used to filter data.
+			SF:
 		Returns:
 			sampled_data: New array of randomly sampled elements. If correlated is True, then this returns a tuple of arrays.'''
 
@@ -238,8 +238,8 @@ seed = None, charging_rate = 11.5, eff=0.78, SF = 0.3, DoD = 0.9):
 			day+= dt.timedelta(days=1)
 			time_arrival_work += dt.timedelta(days = 1)
                         #age battery
-                        self.battery.age(24)
-                        self.commute_battery.age(24)
+                        battery.age(24)
+                        commute_battery.age(24)
 
 	final_cdgdn = (1 - battery.capacity_fade) * bat_degradation / SF
 	final_commute_cdgdn = (1 - commute_battery.capacity_fade) * bat_degradation / SF
