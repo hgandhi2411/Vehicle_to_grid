@@ -157,7 +157,7 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 				o = sell_prices[i]
 			osp.append(o)
 
-			result = profit(x= o, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, seed=i, SF=SF)
+			result = profit(x= o, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, seed=i, eff = eff, SF=SF)
 			max_savings.append(-result[0])
 			capacity_fade.append(result[6])
 			commute_cycles.append(result[8])
