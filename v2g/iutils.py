@@ -106,6 +106,7 @@ def cost_calc(state, dates, price,
 			if(dates[i] == time):
 				if battery.soc < 1 and time < stop:
 					#charge for either timedelta or until we stop
+					# price paid is for the rate - doesn't matter what the eff is
 					total_cost += battery.charge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * price[i]
 					time += dt.timedelta(minutes = timedelta)
 		return total_cost
@@ -126,7 +127,7 @@ def cost_calc(state, dates, price,
 		raise ValueError('Unknown state ' + state)
 
 def create_dict(file_data, bins = 'auto'):
-	''' This function will create a dictionary of values and occurences by histograming given array
+	''' This function will create a dictionary of values and occurrences by histograming given array
 		Args: file_data : array of data
 			bins = array of bin edges to be used for histogramming
 		returns: values, keys: Arrays of values and keys from the dictionary created
@@ -144,7 +145,8 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 			dist, time: The arrays to sample from (otype - array)
 			ev_range: array of length N, This is used to check that range of battery size is capable of handling commute distance sampled.
 			N: desired sample size
-			SF:
+			DoD: depth of discharge
+			SF: salvation factor for battery
 		Returns:
 			sampled_data: New array of randomly sampled elements. If correlated is True, then this returns a tuple of arrays.'''
 
@@ -152,7 +154,7 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 		raise ValueError('Size of ev_range must equal N')
 	length = len(dist)
 	p = np.asarray([1.0/length]*length)
-	x = 1000
+	x = 1000	#start with a high commute distance
 	sampled_dist = np.zeros(N)
 	sampled_time = np.zeros(N)
 	for i in range(N):
@@ -192,12 +194,12 @@ seed = None, charging_rate = 11.5, eff=0.78, SF = 0.3, DoD = 0.9):
 			k+=24
 			day+= dt.timedelta(days=1)
 			time_arrival_work += dt.timedelta(days = 1)
+			battery.age(24)
+			commute_battery.age(24)
 
 		#determining if it is a weekday
 		if(day.weekday()<5):
 			#Total money earned for discharging the battery
-			#print(k)
-			#print(day.date())
 			date_set = dates[k:k+24*3]
 			price_set = price[k:k+24*3]
 
@@ -215,6 +217,7 @@ seed = None, charging_rate = 11.5, eff=0.78, SF = 0.3, DoD = 0.9):
 			#Fast forward time to when charging should start
 			time_leaving_work = add_time(time_arrival_work, daily_work_mins)
 			time_reach_home = add_time(time_leaving_work, commute_time)
+
 			#driving discharge
 			battery.discharge(battery_used_for_travel/2 / commute_time / 60, commute_time / 60, eff=1.0)
 			commute_battery.discharge(battery_used_for_travel/2 / commute_time / 60, commute_time / 60, eff=1.0)
@@ -237,17 +240,16 @@ seed = None, charging_rate = 11.5, eff=0.78, SF = 0.3, DoD = 0.9):
 			k+=24
 			day+= dt.timedelta(days=1)
 			time_arrival_work += dt.timedelta(days = 1)
-                        #age battery
-                        battery.age(24)
-                        commute_battery.age(24)
+			#age battery
+			battery.age(24)
+			commute_battery.age(24)
 
 	final_cdgdn = (1 - battery.capacity_fade) * bat_degradation / SF
 	final_commute_cdgdn = (1 - commute_battery.capacity_fade) * bat_degradation / SF
-	annual_savings = final_discharge_cost - final_charge_cost - final_cdgdn - (0.0 - final_commute_cost - final_commute_cdgdn)
+	annual_savings = final_discharge_cost - (final_charge_cost + final_cdgdn) - (0.0 - (final_commute_cost + final_commute_cdgdn))
 
-	return -annual_savings, final_charge_cost, final_discharge_cost, final_cdgdn, final_commute_cost, final_commute_cdgdn, battery.capacity_fade,  commute_battery.capacity_fade, commute_battery.cycles, battery.cycles
+	return {'Annual_savings': -annual_savings, 'V2G_charge_cost':final_charge_cost, 'V2G_discharge_cost': final_discharge_cost, 'V2G_deg_cost': final_cdgdn, 'Commute_cost': final_commute_cost, 'Commute_deg_cost': final_commute_cdgdn, 'V2G_capacity_fade': 1.0 - battery.capacity_fade,  'Commute_capacity_fade': 1.0 - commute_battery.capacity_fade, 'Commute_cycles': commute_battery.cycles, 'V2G_cycles': battery.cycles}
 
 def profit_wrapper(x, *args):
 	output = profit(x, *args)
-	return output[0]
-
+	return output['Annual_savings']

@@ -27,7 +27,6 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 		charge_time_dict[cars.Battery[i]] = cars.Charge_time[i]
 		range_dict[cars.Battery[i]] = cars.Range[i]
 	battery = np.random.choice(cars.Battery, size = samples, p = cars.prob)
-	battery_commute = np.copy(battery)
 
 	ev_range = np.array([range_dict[i] for i in battery])
 	dist_one_kWh = np.array([rated_dist_dict[i] for i in battery])
@@ -43,6 +42,8 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 
 	#battery degradation cost
 	# Nikolas Soulopoulos, Cost Projections - Battery, vehicles and TCO, BNEF, June 2018 Report
+	# lifecycles = 5300		#for lithium ion battery from Gerad's article
+	# energy_throughput = lifecycles*battery*DoD
 	# bat_degradation = battery * battery_cap_cost/energy_throughput 	#$/kWh
 	bat_degradation = battery_cap_cost * battery * int(degredation)
 	np.set_printoptions(precision = 2, threshold = np.inf)
@@ -141,15 +142,15 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 		for i in tqdm.tqdm(range(samples)):
 
 			pt_scenario = profit(x=-1000, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff, SF=SF)
-			pricetaker_savings.append(-pt_scenario[0])
-			pt_cycles.append(pt_scenario[9])
-			pt_charging_cost.append(pt_scenario[1])
-			pt_discharging_cost.append(pt_scenario[2])
-			pt_cap_fade.append(pt_scenario[6])
+			pricetaker_savings.append(-pt_scenario['Annual_savings'])
+			pt_cycles.append(pt_scenario['V2G_cycles'])
+			pt_charging_cost.append(pt_scenario['V2G_charge_cost'])
+			pt_discharging_cost.append(pt_scenario['V2G_discharge_cost'])
+			pt_cap_fade.append(pt_scenario['V2G_capacity_fade'])
 
 			if len(sell_prices) == 0:
 				result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], i, charging_rate, eff, SF), bounds=(0, 1.0), method='Golden', tol=1e-3, options=dict(maxiter = 50))
-				o = max(0,result.x)
+				o = max(0, result.x)
 			elif len(sell_prices) == 1:
 				o = sell_prices[0]
 			else:
@@ -158,13 +159,13 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 			osp.append(o)
 
 			result = profit(x= o, battery = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, seed=i, eff = eff, SF=SF)
-			max_savings.append(-result[0])
-			capacity_fade.append(result[6])
-			commute_cycles.append(result[8])
-			v2g_cycles.append(result[9])
-			commute_cost.append(result[4])
-			charging_cost.append(result[1])
-			discharging_cost.append(result[2])
+			max_savings.append(-result['Annual_savings'])
+			capacity_fade.append(result['V2G_capacity_fade'])
+			commute_cycles.append(result['Commute_cycles'])
+			v2g_cycles.append(result['V2G_cycles'])
+			commute_cost.append(result['Commute_cost'])
+			charging_cost.append(result['V2G_charge_cost'])
+			discharging_cost.append(result['V2G_discharge_cost'])
 
 		results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'OSP_Savings': max_savings, 'OSP': osp, 'Pricetaker_Savings': pricetaker_savings, 'capacity_fade': capacity_fade, 'Commute_cycles': commute_cycles, 'v2g_cycles': v2g_cycles, 'pt_cycles': pt_cycles, 'osp_charging': charging_cost, 'pt_charging': pt_charging_cost, 'osp_discharging': discharging_cost, 'commute_cost': commute_cost, 'pt_capacity_fade': pt_cap_fade }
 		results = pd.DataFrame.from_dict(results)
