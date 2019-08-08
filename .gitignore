@@ -17,4 +17,4 @@ v2g.egg-info
 *.zip
 *.pyc
 *.csv
-tests.py
+*.CSV

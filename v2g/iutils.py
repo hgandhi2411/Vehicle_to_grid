@@ -107,7 +107,7 @@ def cost_calc(state, dates, price,
 				if battery.soc < 1 and time < stop:
 					#charge for either timedelta or until we stop
 					# price paid is for the rate - doesn't matter what the eff is
-					total_cost += battery.charge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * price[i]
+					total_cost += battery.charge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * price[i] / battery.eff
 					time += dt.timedelta(minutes = timedelta)
 		return total_cost
 
@@ -120,7 +120,7 @@ def cost_calc(state, dates, price,
 		for i in range(len(dates)):
 			if(dates[i] == time):
 				if price[i] >= set_SP and battery.capacity * battery.soc > battery_left and time < stop:
-					money_earned += battery.discharge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * price[i]
+					money_earned += battery.discharge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * price[i] * battery.eff
 					time += dt.timedelta(minutes = timedelta)
 		return money_earned
 	else:
