@@ -167,7 +167,7 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 	return sampled_dist, sampled_time
 
 def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation,
-seed = None, charging_rate = 11.5, eff=0.78, SF = 0.3, DoD = 0.9):
+seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 	time_arrival_work = round_dt_up(time_arrival_work)
 	final_discharge_cost = 0
 	final_charge_cost = 0

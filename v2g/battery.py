@@ -69,8 +69,8 @@ class Battery:
         Eac2 = 35000				# J/mol
         alpha_c2 =  0.023
         beta_c2 = 2.61
-        #compute if we will stop due to SOC or time, gives hours of charging 
-        Teff = min(T, (stop_soc - self.soc) * self.capacity / rate * np.sum(np.array([(1.0 - self.eff)**i for i in range(math.floor(T))])))
+        #compute if we will stop due to SOC or time, gives hours of charging
+        Teff = min(T, (stop_soc - self.soc) * self.capacity / rate * np.sum(np.array([(1.0 - self.eff)**i for i in range(int(T))])))
         #compute N - fractional cycle
         N = Teff * rate * self.eff / self.capacity
 

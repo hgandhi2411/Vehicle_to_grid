@@ -10,7 +10,7 @@ from v2g.iutils import *
 import fire, tqdm, math, os, scipy.optimize
 
 
-def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degredation=True, efficiency=0.78, battery_cap_cost = 209.0, charging_rate = 11.5):
+def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degredation=True, efficiency=0.837, battery_cap_cost = 209.0, charging_rate = 11.5):
 	#total EVs in NYC Sept2018 default samples
 	if type(state_list) == str:
 		state_list = [state_list]
@@ -32,8 +32,9 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 	dist_one_kWh = np.array([rated_dist_dict[i] for i in battery])
 	complete_charging_time = np.array([charge_time_dict[i] for i in battery])
 
-	eff = efficiency #roundtrip efficiency of Tesla S - 0.78
-	#reference: Shirazi, Sachs 2017
+	eff = efficiency
+	#roundtrip efficiency of Tesla S - sqrt(0.7) = 0.837
+	#reference: reply to Shirazi, Sachs 2018 by Elpiniki Apostolaki-Iosifidou, Willett Kempton, Paul Codani
 
 #	charging_rate = 11.5
 	# Considering AC Level2 Charging using SAE J1772 (240V/80A), standard on board chargers are
