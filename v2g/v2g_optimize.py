@@ -10,7 +10,7 @@ from v2g.iutils import *
 import fire, tqdm, math, os, scipy.optimize
 
 
-def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degredation=True, efficiency=0.78, battery_cap_cost = 209, charging_rate = 11.5):
+def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degredation=True, efficiency=0.78, battery_cap_cost = 209.0, charging_rate = 11.5):
 	#total EVs in NYC Sept2018 default samples
 	if type(state_list) == str:
 		state_list = [state_list]
@@ -170,7 +170,6 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 		results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'OSP_Savings': max_savings, 'OSP': osp, 'Pricetaker_Savings': pricetaker_savings, 'capacity_fade': capacity_fade, 'Commute_cycles': commute_cycles, 'v2g_cycles': v2g_cycles, 'pt_cycles': pt_cycles, 'osp_charging': charging_cost, 'pt_charging': pt_charging_cost, 'osp_discharging': discharging_cost, 'commute_cost': commute_cost, 'pt_capacity_fade': pt_cap_fade }
 		results = pd.DataFrame.from_dict(results)
 		results.to_csv(data_file)
-
 
 def main():
 	fire.Fire(v2g_optimize)

@@ -36,18 +36,16 @@ class Battery:
         c = -0.2847
         d = 0.9475
         m = 1.4
-        n = 2
-        Voc = a + b * (-np.log(soc))**m + c * soc + d * np.exp(n * (soc - 1))
-        if isinstance(Voc, (list, np.ndarray)):
-            if np.isnan(Voc).any() == True :
-                index = np.isnan(Voc)
-                Voc[index] = 4.2
+        n = 2.0
+        Voc = a + b * (-np.log(soc) + 10**(-14))**m + c * soc + d * np.exp(n * (soc - 1))
         return Voc
 
     def charge(self, rate, T, temperature=298.15, stop_soc = 1.0, subinterval_limit = 10):
         ''' Charge battery at rate for time T in hours, optionally stopping once soc reaches stop point.
         '''
         if self.soc >= stop_soc:
+            return 0
+        if self.soc == 1.0:
             return 0
         #just to crash on being given a date or something
         T = float(T)
@@ -71,8 +69,8 @@ class Battery:
         Eac2 = 35000				# J/mol
         alpha_c2 =  0.023
         beta_c2 = 2.61
-        #compute if we will stop due to SOC or time, gives hours of charging
-        Teff = min(T, (stop_soc - self.soc) * self.capacity / rate)
+        #compute if we will stop due to SOC or time, gives hours of charging 
+        Teff = min(T, (stop_soc - self.soc) * self.capacity / rate * np.sum(np.array([(1.0 - self.eff)**i for i in range(math.floor(T))])))
         #compute N - fractional cycle
         N = Teff * rate * self.eff / self.capacity
 
@@ -87,16 +85,13 @@ class Battery:
             * np.exp(alpha_b1 * F / Rug *(voc/temperature - V_ref/T_ref)) \
             * ((1 + (1 - self.soc)/Dod_ref)**beta_b1)
         #trapezoidal
-        self.b1 += b1_ref * np.sum((y[1:] + y[:-1]) * (time_grid[1:] - time_grid[:-1]) * 0.5)
-
-        if not self.b1<1:
-            print(self.b1)
-            print( soc, voc, np.exp(alpha_b1 * F / Rug *(voc/temperature - V_ref/T_ref)))
+        # added 10**(-15) to avoid nans
+        self.b1 += max(0.1**15, b1_ref * np.sum((y[1:] + y[:-1]) * (time_grid[1:] - time_grid[:-1]) * 0.5))
 
         y =  np.exp(-Eac2/Rug * (1/temperature - 1/T_ref)) \
 		* np.exp(alpha_c2 * F / Rug *(voc/temperature - V_ref/T_ref)) \
 		* (N * ((1 - self.soc)/Dod_ref)**beta_c2)
-        self.c2 += c2_ref * np.sum((y[1:] + y[:-1]) * (time_grid[1:] - time_grid[:-1]) * 0.5)
+        self.c2 += max(0.1**15, c2_ref * np.sum((y[1:] + y[:-1]) * (time_grid[1:] - time_grid[:-1]) * 0.5))
 
         self.soc += N
         self.hour_age += T

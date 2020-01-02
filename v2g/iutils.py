@@ -154,7 +154,7 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 		raise ValueError('Size of ev_range must equal N')
 	length = len(dist)
 	p = np.asarray([1.0/length]*length)
-	x = 1000	#start with a high commute distance
+	x = 1000.0	#start with a high commute distance
 	sampled_dist = np.zeros(N)
 	sampled_time = np.zeros(N)
 	for i in range(N):
@@ -205,8 +205,8 @@ seed = None, charging_rate = 11.5, eff=0.78, SF = 0.3, DoD = 0.9):
 
 			#go to work
 			#driving discharge
-			battery.discharge(battery_used_for_travel/2 / commute_time / 60, commute_time / 60, eff=1.0)
-			commute_battery.discharge(battery_used_for_travel/2 / commute_time / 60, commute_time / 60, eff=1.0)
+			battery.discharge(battery_used_for_travel/2.0 / commute_time / 60.0, commute_time / 60.0, eff=1.0)
+			commute_battery.discharge(battery_used_for_travel/2.0 / commute_time / 60.0, commute_time / 60.0, eff=1.0)
 
 			time_discharge_starts = round_dt_up(time_arrival_work)
 

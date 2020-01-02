@@ -174,13 +174,13 @@ def test_profit():
                         dates = dates, price = prices, bat_degradation = 10)
 
     #Assert profit is zero
-    assert result[0] == 0
+    assert result['Annual_savings'] == 0
     #assert discharge cost is zero
-    assert result[2] == 0
+    assert result['V2G_discharge_cost'] == 0
     #assert charging cost and commute cost are the same
-    assert result[1] == result[4]
+    assert result['V2G_charge_cost'] == result['Commute_cost']
     # assert q_deg and q_deg_commute are equal
-    assert result[6] == result[7]
+    assert result['V2G_capacity_fade'] == result['Commute_capacity_fade']
 
     result = utils.profit(x = 0, battery = battery,
                         battery_used_for_travel = distance * 2 * battery/ev_range,
@@ -191,10 +191,10 @@ def test_profit():
                         dates = dates, price = prices, bat_degradation = 10)
 
     #assert discharge cost is greater than zero
-    assert result[2] > 0
+    assert result['V2G_discharge_cost'] > 0
     #assert charging cost is expected to be more than commute cost due to additional degradation
-    assert result[1] > result[4]
+    assert result['V2G_charge_cost'] > result['Commute_cost']
     # degradation is more when discharging everyday
-    assert result[6] > result[7]
+    assert result['V2G_capacity_fade'] > result['Commute_capacity_fade']
     # total degradation must be less than the battery capacity
-    assert result[6] < 1
+    assert result['V2G_capacity_fade'] < 1
