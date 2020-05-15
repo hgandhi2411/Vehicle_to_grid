@@ -18,3 +18,11 @@ v2g.egg-info
 *.pyc
 *.csv
 *.CSV
+
+# Images
+*.png
+*.jpg
+*.svg
+
+# Misc files
+*.pdf
