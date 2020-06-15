@@ -9,7 +9,7 @@ class Battery:
         self.b1 = 0
         self.c2 = 0
         self.soc = 1.0
-        self.dod = 1.0
+        self.dod = 0.1
         self.hour_age = 1
         self.cycles = 0
     @property
@@ -69,8 +69,12 @@ class Battery:
         Eac2 = 35000				# J/mol
         alpha_c2 =  0.023
         beta_c2 = 2.61
-        #compute if we will stop due to SOC or time, gives hours of charging
-        Teff = min(T, (stop_soc - self.soc) * self.capacity / rate * np.sum(np.array([(1.0 - self.eff)**i for i in range(int(T))])))
+        # compute if we will stop due to SOC or time, gives hours of charging
+        if T >= 1:
+            # When T > 1 hour, Teff changes proportional to (1 - eff)**i every hour
+            Teff = min(T, (stop_soc - self.soc) * self.capacity / rate * np.sum(np.array([(1.0 - self.eff)**i for i in range(int(T))])))
+        else: 
+            Teff = T
         #compute N - fractional cycle
         N = Teff * rate * self.eff / self.capacity
 
@@ -87,7 +91,6 @@ class Battery:
         #trapezoidal
         # added 10**(-15) to avoid nans
         self.b1 += max(0.1**15, b1_ref * np.sum((y[1:] + y[:-1]) * (time_grid[1:] - time_grid[:-1]) * 0.5))
-
         y =  np.exp(-Eac2/Rug * (1/temperature - 1/T_ref)) \
 		* np.exp(alpha_c2 * F / Rug *(voc/temperature - V_ref/T_ref)) \
 		* (N * ((1 - self.soc)/Dod_ref)**beta_c2)

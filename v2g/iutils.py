@@ -47,6 +47,8 @@ def add_time(array = None, minutes = [0]):
 
 def round_dt_up(time, minutes=5, hours=1):
 	'''Round up (ceil) to the nearest given time increment
+	(the hours argument doesn't do what it is supposed to yet)
+	Taken from: https://stackoverflow.com/a/10854034/9329318
 	Args:
 		time (datetime object): time to round up
 		minutes (integer): nearest minute to round up to
@@ -55,12 +57,14 @@ def round_dt_up(time, minutes=5, hours=1):
 	'''
 	#rounds up to nearest y
 	rounder = lambda x,y: (y - x % y) * (x % y != 0)
-	return time + dt.timedelta(minutes=rounder(time.minute,minutes),
+	return time + dt.timedelta(minutes=rounder(time.minute, minutes),
 							   hours=rounder(time.hour, hours))
 
 
 def round_dt_down(time, minutes=5, hours=1):
 	'''Round down (floor) to the nearest given time increment
+	(the hours argument doesn't do what it is supposed to yet)
+	Taken from: https://stackoverflow.com/a/10854034/9329318
 	Args:
 		time (datetime object): time to round down
 		minutes (integer): nearest minute to round down to
@@ -70,11 +74,16 @@ def round_dt_down(time, minutes=5, hours=1):
 	return time - dt.timedelta(minutes=time.minute % minutes,
                              hours=time.hour % hours)
 
+def find_price_for_timestamp(time, dates, price):
+	''' Get nearest timestamp and return price corresponding to that timestamp'''
+	dates = np.asarray(dates)
+	idx = (np.abs(dates - time)).argmin()
+	return dates[idx], price[idx]
 
 def cost_calc(state, dates, price,
 			  battery, time_start, charging_rate,
 			  time_stop = None, daily_work_mins = None, set_SP = 0,
-			  battery_left = 0, timedelta = 60):
+			  battery_left = 0, timedelta = 5):
 	'''This function will calculate the cost of electricity for based on the state -discharging or charging
 		Args: state = 'charging' or 'discharging'
 			dates = The time stamps for the data used (otype- array)
@@ -95,20 +104,19 @@ def cost_calc(state, dates, price,
 					battery_charged = battery charged
 					percent_deg  = percentage degradation
 	'''
-	time_start = round_dt_down(time_start, minutes = 60)
+	# time_start = round_dt_down(time_start, minutes = 60)
 	if(state == 'charging'):
 		if time_stop is None:
 			raise ValueError()
 		total_cost = 0
 		time = time_start
 		stop = time_stop
-		for i in range(len(dates)):
-			if(dates[i] == time):
-				if battery.soc < 1 and time < stop:
-					#charge for either timedelta or until we stop
-					# price paid is for the rate - doesn't matter what the eff is
-					total_cost += battery.charge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * price[i] / battery.eff
-					time += dt.timedelta(minutes = timedelta)
+		while battery.soc < 1.0 and time < stop:
+			_, rate = find_price_for_timestamp(time, dates, price)
+			# charge for either timedelta or until we stop
+			# price paid depends on the efficiency
+			total_cost += battery.charge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * rate / battery.eff
+			time += dt.timedelta(minutes = timedelta)
 		return total_cost
 
 	elif(state == 'discharging'):
@@ -117,12 +125,13 @@ def cost_calc(state, dates, price,
 		time = time_start
 		stop = round_dt_down(time + dt.timedelta(minutes = daily_work_mins), minutes = timedelta)
 		money_earned = 0
-		for i in range(len(dates)):
-			if(dates[i] == time):
-				if price[i] >= set_SP and battery.capacity * battery.soc > battery_left and time < stop:
-					money_earned += battery.discharge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * price[i] * battery.eff
-					time += dt.timedelta(minutes = timedelta)
+		while battery.capacity * battery.soc >= battery_left and time < stop:
+			_, rate = find_price_for_timestamp(time, dates, price)
+			if rate >= set_SP:
+				money_earned += battery.discharge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * rate * battery.eff
+			time += dt.timedelta(minutes = timedelta)
 		return money_earned
+
 	else:
 		raise ValueError('Unknown state ' + state)
 
@@ -168,7 +177,7 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 
 def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation,
 seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
-	time_arrival_work = round_dt_up(time_arrival_work)
+	# time_arrival_work = round_dt_up(time_arrival_work)
 	final_discharge_cost = 0
 	final_charge_cost = 0
 	final_commute_cost = 0
@@ -209,11 +218,9 @@ seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 			commute_battery.discharge(battery_used_for_travel/2.0 / commute_time / 60.0, commute_time / 60.0, eff=1.0)
 
 			time_discharge_starts = round_dt_up(time_arrival_work)
-
 			#Start with discharging, assuming battery has been used to commute one way
-			cost_discharging = cost_calc(state = 'discharging', dates = date_set, price = price_set, battery = battery, time_start = time_discharge_starts, time_stop = None, daily_work_mins = daily_work_mins, set_SP = x, battery_left = battery_used_for_travel/2, timedelta = 60, charging_rate=charging_rate)
+			cost_discharging = cost_calc(state = 'discharging', dates = date_set, price = price_set, battery = battery, time_start = time_discharge_starts, time_stop = None, daily_work_mins = daily_work_mins, set_SP = x, battery_left = battery_used_for_travel/2, timedelta = 5, charging_rate=charging_rate)
 			final_discharge_cost += cost_discharging
-
 			#Fast forward time to when charging should start
 			time_leaving_work = add_time(time_arrival_work, daily_work_mins)
 			time_reach_home = add_time(time_leaving_work, commute_time)
@@ -229,11 +236,11 @@ seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 
 			#Charge the battery up until time to leave for work
 			time_charging_starts = round_dt_up(time_reach_home)
-			cost_charging= cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery, time_start = time_charging_starts, time_stop = time_arrival_work - dt.timedelta(minutes=commute_time), timedelta=60, charging_rate=charging_rate)
+			cost_charging= cost_calc(state = 'charging', dates = date_set, price = price_set, battery = battery, time_start = time_charging_starts, time_stop = time_arrival_work - dt.timedelta(minutes=commute_time), timedelta=5, charging_rate=charging_rate)
 			final_charge_cost += cost_charging
 
 			#Cost of commute without V2G
-			cost_commute = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = commute_battery, time_start = time_charging_starts, time_stop = time_arrival_work - dt.timedelta(minutes=commute_time), timedelta=60, charging_rate=charging_rate)
+			cost_commute = cost_calc(state = 'charging', dates = date_set, price = price_set, battery = commute_battery, time_start = time_charging_starts, time_stop = time_arrival_work - dt.timedelta(minutes=commute_time), timedelta=5, charging_rate=charging_rate)
 			final_commute_cost += cost_commute
 
 		else:

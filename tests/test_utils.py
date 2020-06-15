@@ -51,6 +51,18 @@ def test_round_dt_down():
     assert rtime.minute == 0
     assert rtime.hour == 8
 
+def test_find_price_for_timestamp():
+    time = dt.datetime(2020, 5, 1, 6, 22)
+    dates, prices = [], []
+    for j in range(1,9):
+        for i in range(0, 60, 5):
+            dates.append(dt.datetime(2020, 5, 1, j, i))
+            prices.append(i * 0.1)
+    dates = np.asarray(dates)
+    nearest, rate = utils.find_price_for_timestamp(time, dates, prices)
+    assert nearest == dt.datetime(2020, 5, 1, 6, 20)
+    assert rate == 2
+
 def test_cost_calc_discharging():
     #all day discharge
     state = 'discharging'
@@ -71,7 +83,7 @@ def test_cost_calc_discharging():
                              charging_rate=charging_rate)
     #total money
     money = sum(prices) * charging_rate
-    assert result == money
+    assert result == pytest.approx(money, 0.01)
 
 def test_cost_calc_empty_battery():
     #price is always 1
@@ -103,25 +115,25 @@ def test_cost_calc_charging():
     #all day discharge
     state = 'charging'
     #price is always 1
-    dates = [dt.datetime(1,1,1,x) for x in range(24)]
+    dates = [dt.datetime(1,1,1,x, 0) for x in range(24)]
     prices = [1 for _ in dates]
     #huge battery
     battery = Battery(10000, 1.0)
     battery.soc = 0
     #start right away
-    time_start = dt.datetime(1,1,1,0)
+    time_start = dt.datetime(1,1,1,0,0)
     #working hours
     daily_work_mins = 24 * 60
     #charging rate in Energy / seconds?
     charging_rate = 1
     result = utils.cost_calc(state, dates, prices, battery,
-                             time_start,
+                             time_start = time_start,
                              daily_work_mins=daily_work_mins,
                              charging_rate=charging_rate,
                              time_stop = dates[-1] + dt.timedelta(minutes=60))
     #total money
     money = sum(prices) * charging_rate
-    assert result == money
+    assert result == pytest.approx(money, 0.01)
 
 def test_create_dict():
     #test data
@@ -163,7 +175,7 @@ def test_profit():
     time = distance * 2.5
     #work pattern
     time_arrival_work = dt.datetime(2017,1,1,8, 30)
-    daily_work_mins = 400
+    daily_work_mins = 200
 
     result = utils.profit(x = 2, battery = battery,
                         battery_used_for_travel = distance * 2 * battery/ev_range,
