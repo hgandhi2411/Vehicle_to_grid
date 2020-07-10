@@ -87,28 +87,32 @@ def test_cost_calc_discharging():
 
 def test_cost_calc_empty_battery():
     #price is always 1
-    dates = [dt.datetime(1,1,1,x) for x in range(24)]
+    dates = [dt.datetime(1,1,1,x,y*5) for x,y in zip(range(24), range(12))]
     prices = [1 for _ in dates]
     #start right away
-    time_start = dt.datetime(1,1,1,0)
+    time_start = dt.datetime(1,1,1,0,0)
     #working hours
     daily_work_mins = 24 * 60
-    #charging rate in Energy / seconds?
-    charging_rate = 1
+    #charging rate in Energy / hour
+    charging_rate = 0.1
     result = utils.cost_calc('charging', dates, prices, Battery(1, 1.0),
                              time_start,
                              daily_work_mins=daily_work_mins,
                              charging_rate=charging_rate,
-                             time_stop = dates[-1] + dt.timedelta(minutes=60), battery_left=1)
-    #total money
+                             time_stop = dates[-1] + dt.timedelta(minutes=5), 
+                             battery_left=1)
+    #total cost
     assert result < 10e-9
 
-    result = utils.cost_calc('discharging', dates, prices, Battery(1, 1.0),
+    battery = Battery(0.1, 1.0)
+    battery.discharge(1, 1)
+    result = utils.cost_calc('discharging', dates, prices, battery,
                              time_start,
                              daily_work_mins=daily_work_mins,
                              charging_rate=charging_rate,
-                             time_stop = None, battery_left=1)
-    #total money
+                             timedelta=5,
+                             time_stop = None, battery_left=0.001)
+    #total money gained
     assert result < 10e-9
 
 def test_cost_calc_charging():
@@ -163,7 +167,7 @@ def test_dist_time_battery_sampling():
 
 def test_profit():
     base = dt.datetime(2017, 1, 1, 0)
-    dates = [base + dt.timedelta(hours = x) for x in range(6024)]
+    dates = [base + dt.timedelta(minutes = 5) for x in range(72288)]
     #price is always 1
     prices = [1 for _ in dates]
     #battery specifications
