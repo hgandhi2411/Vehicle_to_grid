@@ -10,8 +10,9 @@ from v2g.iutils import *
 import fire, tqdm, math, os, scipy.optimize
 
 
-def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0.3, degredation=True, efficiency=0.837, battery_cap_cost = 209.0, charging_rate = 11.5):
-	#total EVs in NYC Sept2018 default samples
+def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=5298, SF=0.3, degredation=True, efficiency=0.837, battery_cap_cost = 209.0, charging_rate = 11.5):
+	#total BEVs in NYC Dec2019 default samples
+	#https://www.nyserda.ny.gov/All-Programs/Programs/ChargeNY/Support-Electric/Map-of-EV-Registrations
 	if type(state_list) == str:
 		state_list = [state_list]
 	if type(sell_prices) == str or type(sell_prices) == float:
@@ -20,7 +21,7 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 
 	#Source: https://www.nyserda.ny.gov/All-Programs/Programs/ChargeNY/Support-Electric/Map-of-EV-Registrations
 
-	cars = pd.read_csv(os.path.join(prefix,'Cars.csv'), delimiter= ',')
+	cars = pd.read_csv(os.path.join(prefix,'cars_2019.csv'), delimiter= ',')
 	rated_dist_dict, charge_time_dict, range_dict = {}, {}, {}
 	for i in range(len(cars.Battery)):
 		rated_dist_dict[cars.Battery[i]] = cars.dist[i]
@@ -58,14 +59,14 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 	#state in column 49 of PERV2PUB.csv
 	state = np.genfromtxt(nhts_filepath, delimiter = ',', dtype = None, usecols = (48), skip_header= 1, filling_values = 0)
 	if state_list is None:
-		state_list = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'New York']
+		state_list = ['Arizona', 'California', 'DC', 'Illinois', 'Massachusetts', 'NewYork']
 
 	mask = {'Arizona': 'AZ',
 			'California': 'CA',
 			'DC': 'DC',
 			'Illinois': 'IL',
 			'Massachusetts': 'MA',
-			'New York': 'NY',
+			'NewYork': 'NY',
 			'Texas': 'TX'}
 	print(dt.datetime.today().date())
 	result_path = os.path.join(prefix, 'Realistic_model', 'Results', str(dt.datetime.today().date()))
@@ -114,7 +115,7 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=2813, SF=0
 		time_leave_home = np.asarray(time_leave_home)
 		time_depart_from_home = []
 		for i in range(len(time_leave_home)):
-			time_depart_from_home.append(dt.datetime(2017,1,1,time_leave_home[i].hour, time_leave_home[i].minute, 0))
+			time_depart_from_home.append(dt.datetime(2019,1,1,time_leave_home[i].hour, time_leave_home[i].minute, 0))
 
 		time_arrival_work = add_time(np.asarray(time_depart_from_home), commute_time)
 

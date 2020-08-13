@@ -18,14 +18,14 @@ def state_pop(state):
                 'DC': 'ss16pdc.csv',
                 'Illinois': 'ss16pil.csv',
                 'Massachusetts': 'ss16pma.csv',
-                'New York': 'ss16pny.csv',
+                'NewYork': 'ss16pny.csv',
                 'Texas': 'ss16ptx.csv'}
-    LBMP_file = {'Arizona': 'phoenix.csv',
-                'California': 'sfca.csv',
-                'DC': 'washingtondc.csv',
-                'Illinois': 'chicago.csv',
-                'Massachusetts': 'boston.csv',
-                'New York': 'nyc.csv',
+    LBMP_file = {'Arizona': 'phoenix_2019.csv',
+                'California': 'sfca_2019.csv',
+                'DC': 'washingtondc_2019.csv',
+                'Illinois': 'chicago_2019.csv',
+                'Massachusetts': 'boston_2019.csv',
+                'NewYork': 'nyc_2019.csv',
                 'Texas': 'houston.csv'}
     return os.path.join('Population_data', pop_files[state]), os.path.join('LBMP', LBMP_file[state])
 
@@ -182,7 +182,7 @@ seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 	final_charge_cost = 0
 	final_commute_cost = 0
 	k = 0
-	day = dt.datetime(2017,1,1,0,0)
+	day = dt.datetime(2019,1,1,0,0)
 	count = 1
 	#convert battery variable into battery object
 	battery = Battery(battery, eff)
@@ -194,7 +194,7 @@ seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 	vacation_weeks = random.sample(range(52), k = num_vacation_weeks[0])
 	vacation_days = np.array([i+np.arange(1, 8, 1) for i in vacation_weeks]).flatten()
 	#Using holiday calender
-	holidays = USFederalHolidayCalendar().holidays(start = '2017-01-01', end = '2018-01-01').to_pydatetime()
+	holidays = USFederalHolidayCalendar().holidays(start = '2019-01-01', end = '2020-01-01').to_pydatetime()
 
 	while(count <= 250): #working_days
 		#check if it is a holiday
