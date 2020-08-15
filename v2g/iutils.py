@@ -200,7 +200,7 @@ seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 		#check if it is a holiday
 		if day in holidays or count in vacation_days:
 			# print('{} is a holiday'.format(day.date()))
-			k+=24
+			k+=288
 			day+= dt.timedelta(days=1)
 			time_arrival_work += dt.timedelta(days = 1)
 			battery.age(24)
@@ -209,8 +209,8 @@ seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 		#determining if it is a weekday
 		if(day.weekday()<5):
 			#Total money earned for discharging the battery
-			date_set = dates[k:k+24*3]
-			price_set = price[k:k+24*3]
+			date_set = dates[k:k+288*2]
+			price_set = price[k:k+288*2]
 
 			#go to work
 			#driving discharge
@@ -244,7 +244,7 @@ seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 			final_commute_cost += cost_commute
 
 		else:
-			k+=24
+			k+=288
 			day+= dt.timedelta(days=1)
 			time_arrival_work += dt.timedelta(days = 1)
 			#age battery

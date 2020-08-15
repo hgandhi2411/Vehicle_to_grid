@@ -26,3 +26,5 @@ v2g.egg-info
 
 # Misc files
 *.pdf
+*.out
+*.sh

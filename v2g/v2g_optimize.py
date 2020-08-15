@@ -10,7 +10,7 @@ from v2g.iutils import *
 import fire, tqdm, math, os, scipy.optimize
 
 
-def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=5298, SF=0.3, degredation=True, efficiency=0.837, battery_cap_cost = 209.0, charging_rate = 11.5):
+def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=5298, SF=0.3, degredation=True, efficiency=0.837, battery_cap_cost = 156.0, charging_rate = 11.5):
 	#total BEVs in NYC Dec2019 default samples
 	#https://www.nyserda.ny.gov/All-Programs/Programs/ChargeNY/Support-Electric/Map-of-EV-Registrations
 	if type(state_list) == str:
@@ -129,7 +129,7 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=5298, SF=0
 		#LBMP Data
 		data = pd.read_csv(os.path.join(prefix, lbmp_file))
 		dates = convert_npdatetime64_topy(pd.to_datetime(data.Time_Stamp).values)
-		price = np.asarray(data.LBMP)/1000		#LBMP in kWh
+		price = (np.asarray(data.LBMP)).astype(np.float)/1000		#LBMP in kWh
 
 		data_file = os.path.join(result_path, '{}_eff{}_cap{}_rch{}.csv'.format(s, eff, battery_cap_cost, charging_rate))
 
