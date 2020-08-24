@@ -115,7 +115,7 @@ def cost_calc(state, dates, price,
 			_, rate = find_price_for_timestamp(time, dates, price)
 			# charge for either timedelta or until we stop
 			# price paid depends on the efficiency
-			total_cost += battery.charge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * rate / battery.eff
+			total_cost += battery.charge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 3600)) * rate / battery.eff
 			time += dt.timedelta(minutes = timedelta)
 		return total_cost
 
@@ -125,10 +125,10 @@ def cost_calc(state, dates, price,
 		time = time_start
 		stop = round_dt_down(time + dt.timedelta(minutes = daily_work_mins), minutes = timedelta)
 		money_earned = 0
-		while battery.capacity * battery.soc >= battery_left and time < stop:
+		while battery.capacity * battery.soc > battery_left and time < stop:
 			_, rate = find_price_for_timestamp(time, dates, price)
 			if rate >= set_SP:
-				money_earned += battery.discharge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 60)) * rate * battery.eff
+				money_earned += battery.discharge(charging_rate, min(timedelta / 60, (stop - time).total_seconds() / 3600)) * rate * battery.eff
 			time += dt.timedelta(minutes = timedelta)
 		return money_earned
 
@@ -175,8 +175,8 @@ def dist_time_battery_correlated_sampling(dist, time, ev_range, N, DoD = 0.9, SF
 		x = 1000
 	return sampled_dist, sampled_time
 
-def profit(x, battery, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation,
-seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
+def profit(x, battery_size, battery_used_for_travel, commute_distance, commute_time, complete_charging_time, time_arrival_work, daily_work_mins, dates, price, bat_degradation,
+vacation_days, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 	# time_arrival_work = round_dt_up(time_arrival_work)
 	final_discharge_cost = 0
 	final_charge_cost = 0
@@ -185,32 +185,31 @@ seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 	day = dt.datetime(2019,1,1,0,0)
 	count = 1
 	#convert battery variable into battery object
-	battery = Battery(battery, eff)
-	commute_battery = Battery(battery.capacity, battery.eff)
+	battery = Battery(battery_size, eff)
+	commute_battery = Battery(battery_size, eff)
 
-	# vacation time
-	np.random.seed(seed)
-	num_vacation_weeks = np.random.binomial(52, 1/26, 1)	# expected value = 2
-	vacation_weeks = random.sample(range(52), k = num_vacation_weeks[0])
-	vacation_days = np.array([i+np.arange(1, 8, 1) for i in vacation_weeks]).flatten()
 	#Using holiday calender
 	holidays = USFederalHolidayCalendar().holidays(start = '2019-01-01', end = '2020-01-01').to_pydatetime()
 
-	while(count <= 250): #working_days
+	# 52*2 weekdays, 11 holidays, on average 14 vacation days
+	# leaves 236 working days
+	while(count <= 365): # calendar days
 		#check if it is a holiday
 		if day in holidays or count in vacation_days:
 			# print('{} is a holiday'.format(day.date()))
 			k+=288
+			count+=1
 			day+= dt.timedelta(days=1)
 			time_arrival_work += dt.timedelta(days = 1)
 			battery.age(24)
 			commute_battery.age(24)
+			continue
 
 		#determining if it is a weekday
 		if(day.weekday()<5):
 			#Total money earned for discharging the battery
-			date_set = dates[k:k+288*2]
-			price_set = price[k:k+288*2]
+			date_set = dates[k:k+288*3]
+			price_set = price[k:k+288*3]
 
 			#go to work
 			#driving discharge
@@ -230,7 +229,7 @@ seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 			commute_battery.discharge(battery_used_for_travel/2 / commute_time / 60, commute_time / 60, eff=1.0)
 
 			time_arrival_work += dt.timedelta(days = 1)
-			k += 24
+			k += 288
 			day += dt.timedelta(days=1)
 			count+=1
 
@@ -244,7 +243,8 @@ seed = None, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 			final_commute_cost += cost_commute
 
 		else:
-			k+=288
+			k += 288
+			count += 1
 			day+= dt.timedelta(days=1)
 			time_arrival_work += dt.timedelta(days = 1)
 			#age battery

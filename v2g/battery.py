@@ -9,7 +9,7 @@ class Battery:
         self.b1 = 0
         self.c2 = 0
         self.soc = 1.0
-        self.dod = 0.1
+        self.dod = 0.9
         self.hour_age = 1
         self.cycles = 0
     @property
