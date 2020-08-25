@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-import matplotlib as mlib
-mlib.use('Agg')
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import datetime as dt
-from pandas.tseries.holiday import USFederalHolidayCalendar
 from v2g.iutils import *
-import fire, tqdm, math, os, scipy.optimize
+import fire, tqdm, os, random
+from bayes_opt import BayesianOptimization
+import warnings
 
+warnings.filterwarnings('ignore')
 
 def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=5298, SF=0.3, degradation=True, efficiency=0.837, battery_cap_cost = 156.0, charging_rate = 11.5):
 	#total BEVs in NYC Dec2019 default samples
@@ -18,8 +17,6 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=5298, SF=0
 	if type(sell_prices) == str or type(sell_prices) == float:
 		sell_prices = [float(sell_prices)]
 	print('Running with \n\t state_list = {}\n\t sell_prices = {}\n\t prefix = {}\n\t samples = {}\n\t SF = {}\n\t Degradation = {}\n\t efficiency = {}\n\t battery_cap_cost = {}\n\t charging_rate = {}'.format(state_list, sell_prices, prefix, samples, SF, degradation, efficiency, battery_cap_cost, charging_rate))
-
-	#Source: https://www.nyserda.ny.gov/All-Programs/Programs/ChargeNY/Support-Electric/Map-of-EV-Registrations
 
 	cars = pd.read_csv(os.path.join(prefix,'cars_2019.csv'), delimiter= ',')
 	rated_dist_dict, charge_time_dict, range_dict = {}, {}, {}
@@ -154,18 +151,22 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=5298, SF=0
 			if num_vacation_weeks > 3:
 				num_vacation_weeks = 3
 			vacation_weeks = random.sample(range(52), k = num_vacation_weeks)
-			vacation_days = np.array([i+np.arange(1, 8, 1) for i in vacation_weeks]).flatten()
+			vacation_days = np.array([i*7.+np.arange(1, 8, 1) for i in vacation_weeks]).flatten()
 
 			pt_scenario = profit(x=-1000, battery_size = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, eff = eff, SF=SF, vacation_days = vacation_days)
-			pricetaker_savings.append(-pt_scenario['Annual_savings'])
+			pricetaker_savings.append(pt_scenario['Annual_savings'])
 			pt_cycles.append(pt_scenario['V2G_cycles'])
 			pt_charging_cost.append(pt_scenario['V2G_charge_cost'])
 			pt_discharging_cost.append(pt_scenario['V2G_discharge_cost'])
 			pt_cap_fade.append(pt_scenario['V2G_capacity_fade'])
 
 			if len(sell_prices) == 0:
-				result = scipy.optimize.minimize_scalar(profit_wrapper, args=(battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], vacation_days, charging_rate, eff, SF), bounds=(0, 1.0), method='Golden', tol=1e-3, options=dict(maxiter = 50))
-				o = max(0, result.x)
+				optimizer = BayesianOptimization(f = lambda x: profit_wrapper(x, battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], vacation_days, charging_rate, eff, SF), 
+												 pbounds = {'x': (0., 1.)},
+												 random_state = i)
+				optimizer.maximize()
+				o = optimizer.max['params']['x']
+				# o = max(0, result.x)
 			elif len(sell_prices) == 1:
 				o = sell_prices[0]
 			else:
@@ -174,14 +175,13 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=5298, SF=0
 			osp.append(o)
 
 			result = profit(x= o, battery_size = battery[i], battery_used_for_travel = battery_used_for_travel[i], commute_distance = commute_dist[i], commute_time = commute_time[i], complete_charging_time = complete_charging_time[i], time_arrival_work = time_arrival_work[i], daily_work_mins = daily_work_mins[i], dates = dates, price = price, bat_degradation = bat_degradation[i], charging_rate=charging_rate, vacation_days=vacation_days, eff = eff, SF=SF)
-			max_savings.append(-result['Annual_savings'])
+			max_savings.append(result['Annual_savings'])
 			capacity_fade.append(result['V2G_capacity_fade'])
 			commute_cycles.append(result['Commute_cycles'])
 			v2g_cycles.append(result['V2G_cycles'])
 			commute_cost.append(result['Commute_cost'])
 			charging_cost.append(result['V2G_charge_cost'])
 			discharging_cost.append(result['V2G_discharge_cost'])
-			print(result)
 
 		results = {'Distance': commute_dist, 'Time':commute_time, 'Work hours': weekly_work_hrs, 'Work time': time_depart_from_home, 'Battery': battery, 'OSP_Savings': max_savings, 'OSP': osp, 'Pricetaker_Savings': pricetaker_savings, 'capacity_fade': capacity_fade, 'Commute_cycles': commute_cycles, 'v2g_cycles': v2g_cycles, 'pt_cycles': pt_cycles, 'osp_charging': charging_cost, 'pt_charging': pt_charging_cost, 'osp_discharging': discharging_cost, 'commute_cost': commute_cost, 'pt_capacity_fade': pt_cap_fade }
 		results = pd.DataFrame.from_dict(results)

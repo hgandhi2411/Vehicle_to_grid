@@ -1,5 +1,4 @@
 import math
-import scipy.integrate
 import numpy as np
 
 class Battery:

@@ -2,14 +2,9 @@ import matplotlib
 matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
 import datetime as dt
 from pandas.tseries.holiday import USFederalHolidayCalendar
-import scipy.stats as ss
 import os
-import math
-import random
 from .battery import Battery
 
 def state_pop(state):
@@ -255,7 +250,7 @@ vacation_days, charging_rate = 11.5, eff=0.837, SF = 0.3, DoD = 0.9):
 	final_commute_cdgdn = (1 - commute_battery.capacity_fade) * bat_degradation / SF
 	annual_savings = final_discharge_cost - (final_charge_cost + final_cdgdn) - (0.0 - (final_commute_cost + final_commute_cdgdn))
 
-	return {'Annual_savings': -annual_savings, 'V2G_charge_cost':final_charge_cost, 'V2G_discharge_cost': final_discharge_cost, 'V2G_deg_cost': final_cdgdn, 'Commute_cost': final_commute_cost, 'Commute_deg_cost': final_commute_cdgdn, 'V2G_capacity_fade': 1.0 - battery.capacity_fade,  'Commute_capacity_fade': 1.0 - commute_battery.capacity_fade, 'Commute_cycles': commute_battery.cycles, 'V2G_cycles': battery.cycles}
+	return {'Annual_savings': annual_savings, 'V2G_charge_cost':final_charge_cost, 'V2G_discharge_cost': final_discharge_cost, 'V2G_deg_cost': final_cdgdn, 'Commute_cost': final_commute_cost, 'Commute_deg_cost': final_commute_cdgdn, 'V2G_capacity_fade': 1.0 - battery.capacity_fade,  'Commute_capacity_fade': 1.0 - commute_battery.capacity_fade, 'Commute_cycles': commute_battery.cycles, 'V2G_cycles': battery.cycles}
 
 def profit_wrapper(x, *args):
 	output = profit(x, *args)
