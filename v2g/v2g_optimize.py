@@ -162,9 +162,9 @@ def v2g_optimize(state_list=None, sell_prices=[], prefix='.', samples=5298, SF=0
 
 			if len(sell_prices) == 0:
 				optimizer = BayesianOptimization(f = lambda x: profit_wrapper(x, battery[i], battery_used_for_travel[i], commute_dist[i], commute_time[i], complete_charging_time[i], time_arrival_work[i], daily_work_mins[i], dates, price,  bat_degradation[i], vacation_days, charging_rate, eff, SF), 
-												 pbounds = {'x': (0., 1.)},
+												 pbounds = {'x': (0, 1)},
 												 random_state = i)
-				optimizer.maximize()
+				optimizer.maximize(init_points = 20, n_iter = 15)
 				o = optimizer.max['params']['x']
 				# o = max(0, result.x)
 			elif len(sell_prices) == 1:
