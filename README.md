@@ -44,6 +44,4 @@ To cite the code, use this citation:
 ```
 
 ### Disclaimer
-This repository is not actively maintained
-
-&copy Heta A. Gandhi, Andrew D. White
+This repository is not actively maintained. 
